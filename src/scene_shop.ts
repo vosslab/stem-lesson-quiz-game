@@ -21,6 +21,21 @@ interface ShopOpts {
 
 //============================================
 
+// Auto-revert preview duration. Long enough for a kid to look at the
+// re-skinned UI behind the shop, short enough that the preview cannot
+// be used as a permanent free equip on touch devices (where mouseleave
+// never fires).
+const PREVIEW_REVERT_MS = 2500;
+
+function restore_equipped_to_body(): void {
+	const equipped_id = cosmetics.THEME_CATALOG.find((t) =>
+		cosmetics.is_equipped(t.id)
+	)?.id;
+	if (equipped_id) {
+		document.body.setAttribute("data-theme", equipped_id);
+	}
+}
+
 export function render_shop_screen(opts: ShopOpts): HTMLElement {
 	// Record the shop visit for daily goals. Idempotent: after the first
 	// dispatch completes the visit_shop goal, subsequent calls (from
@@ -30,6 +45,27 @@ export function render_shop_screen(opts: ShopOpts): HTMLElement {
 	if (newly_completed.length > 0) {
 		grant_goal_rewards(newly_completed);
 		check_and_grant_completion_bonuses();
+	}
+
+	// Single timer for the whole scene -- starting a new preview cancels
+	// the previous one so we never stack reverts.
+	let preview_timer: ReturnType<typeof setTimeout> | null = null;
+	function start_preview(theme_id: ThemeId): void {
+		if (preview_timer !== null) {
+			clearTimeout(preview_timer);
+		}
+		document.body.setAttribute("data-theme", theme_id);
+		preview_timer = setTimeout(() => {
+			restore_equipped_to_body();
+			preview_timer = null;
+		}, PREVIEW_REVERT_MS);
+	}
+	function cancel_preview(): void {
+		if (preview_timer !== null) {
+			clearTimeout(preview_timer);
+			preview_timer = null;
+		}
+		restore_equipped_to_body();
 	}
 
 	const container = document.createElement("div");
@@ -45,7 +81,10 @@ export function render_shop_screen(opts: ShopOpts): HTMLElement {
 
 	const back_button = document.createElement("button");
 	back_button.textContent = "Back";
-	back_button.addEventListener("click", opts.on_back);
+	back_button.addEventListener("click", () => {
+		cancel_preview();
+		opts.on_back();
+	});
 	header.appendChild(back_button);
 
 	container.appendChild(header);
@@ -153,8 +192,11 @@ export function render_shop_screen(opts: ShopOpts): HTMLElement {
 						// Block bubbling to the card click handler so the
 						// card preview never fires from a Buy tap.
 						evt.stopPropagation();
-						// Show confirmation modal so a stray tap does not
-						// drain coins on an accidental purchase.
+						// Kill any in-flight preview before the modal opens
+						// so the kid sees their actual equipped theme behind
+						// the confirmation card -- not a preview that could
+						// auto-revert mid-decision.
+						cancel_preview();
 						const confirmed = await show_buy_confirmation(theme);
 						if (!confirmed) {
 							return;
@@ -169,18 +211,27 @@ export function render_shop_screen(opts: ShopOpts): HTMLElement {
 
 			card.appendChild(button);
 
-			// Preview is shown by the swatch element only (it has its own
-			// data-theme). We intentionally do NOT mutate document.body's
-			// data-theme on tap/hover: on touch devices mouseleave never
-			// fires, so a preview would stick and effectively equip an
-			// unowned theme. Card pulse on tap gives tactile feedback
-			// without re-skinning the whole UI.
+			// Tap-to-preview with auto-revert. On touch devices mouseleave
+			// never fires, so a sticky preview would effectively equip an
+			// unowned theme (daughter eval). start_preview() sets a single
+			// scene-wide timer that restores the real equipped theme after
+			// PREVIEW_REVERT_MS; tapping another card cancels and restarts.
 			card.addEventListener("click", (evt) => {
 				if (evt.target !== button) {
 					card.classList.remove("scene_shop_card_tapped");
 					void card.offsetWidth;
 					card.classList.add("scene_shop_card_tapped");
+					start_preview(theme.id);
 				}
+			});
+
+			// Hover preview (desktop bonus). Same timer so a kid swiping
+			// the mouse across cards cannot pile up stale preview state.
+			card.addEventListener("mouseenter", () => {
+				start_preview(theme.id);
+			});
+			card.addEventListener("mouseleave", () => {
+				cancel_preview();
 			});
 
 			grid.appendChild(card);
