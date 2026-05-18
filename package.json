@@ -10,8 +10,8 @@
   },
   "name": "stem-lesson-quiz-game",
   "version": "1.0.0",
-  "description": "`starter_repo_template` is canonical bootstrap infrastructure for Python repositories that need consistent repository policy, Python style conventions, licensing boundaries, and test/lint scaffolding before project-specific code is added.",
-  "main": "index.js",
+  "description": "TypeScript browser quiz game for learning word stems.",
+  "private": true,
   "directories": {
     "doc": "docs",
     "test": "tests"
@@ -28,8 +28,8 @@
     "url": "git+https://github.com/vosslab/stem-lesson-quiz-game.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Neil Voss",
+  "license": "LGPL-3.0-or-later",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/vosslab/stem-lesson-quiz-game/issues"
