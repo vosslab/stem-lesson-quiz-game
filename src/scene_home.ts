@@ -197,7 +197,7 @@ export function render_home_screen(opts: HomeScreenOptions): HTMLElement {
 
 		const check_mark = document.createElement("div");
 		check_mark.className = "lesson-check";
-		check_mark.textContent = "✓";
+		check_mark.textContent = "\u2713";
 
 		card.appendChild(lesson_num);
 		card.appendChild(check_mark);

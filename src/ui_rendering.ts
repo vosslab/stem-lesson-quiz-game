@@ -20,9 +20,9 @@ function add_feedback_icon_overlay(btn: HTMLButtonElement, type: "correct" | "wr
 	overlay.className = `feedback-icon feedback-icon-${type}`;
 
 	if (type === "correct") {
-		overlay.textContent = "✓"; // checkmark
+		overlay.textContent = "\u2713"; // checkmark
 	} else {
-		overlay.textContent = "✗"; // X
+		overlay.textContent = "\u2717"; // X
 	}
 
 	btn.appendChild(overlay);
@@ -32,12 +32,14 @@ function add_feedback_icon_overlay(btn: HTMLButtonElement, type: "correct" | "wr
 
 // Build the full question screen DOM.
 // on_choice is called with the chosen answer string when a button is clicked or key pressed.
+// on_home is called when the user clicks the home/quit button or presses Escape.
 export function render_question_screen(opts: {
 	question: Question;
 	round: RoundState;
 	on_choice: (chosen: string) => void;
+	on_home: () => void;
 }): HTMLElement {
-	const { question, round, on_choice } = opts;
+	const { question, round, on_choice, on_home } = opts;
 
 	const container = document.createElement("div");
 	container.className = "scene_play";
@@ -142,19 +144,17 @@ export function render_question_screen(opts: {
 
 	for (let i = 0; i < question.choices.length; i++) {
 		const btn = document.createElement("button");
-		btn.className = `choice-button btn-${(i % 4) + 1}`;
+		btn.className = "choice-button";
 		btn.setAttribute("data-choice-index", String(i));
 
-		// PERMANENT SLOT IDENTITY: left stripe
-		const stripe = document.createElement("span");
-		stripe.className = "slot-stripe";
-		stripe.style.background = slot_accent_for(i);
-		btn.appendChild(stripe);
+		// PERMANENT SLOT IDENTITY: button fill color
+		btn.style.background = slot_accent_for(i);
+		btn.style.color = "#ffffff";
+		btn.style.fontWeight = "900";
 
-		// PERMANENT SLOT IDENTITY: keyboard badge (top-left corner circle)
+		// PERMANENT SLOT IDENTITY: keyboard badge (top-left corner circle with white background)
 		const badge = document.createElement("span");
 		badge.className = "slot-badge";
-		badge.style.background = slot_accent_for(i);
 		badge.textContent = String(i + 1);
 		btn.appendChild(badge);
 
@@ -175,6 +175,22 @@ export function render_question_screen(opts: {
 	mascot_slot.className = "mascot-slot";
 	mount_mascot(mascot_slot);
 
+	// Home/quit button (top-right corner nav)
+	const corner_nav = document.createElement("div");
+	corner_nav.className = "play-corner-nav";
+
+	const home_btn = document.createElement("button");
+	home_btn.className = "btn-home-quit";
+	home_btn.setAttribute("aria-label", "Return to home");
+	home_btn.textContent = "Home";
+
+	home_btn.addEventListener("click", () => {
+		on_home();
+	});
+
+	corner_nav.appendChild(home_btn);
+
+	container.appendChild(corner_nav);
 	container.appendChild(top_bar);
 	container.appendChild(question_card);
 	container.appendChild(buttons_grid);
@@ -186,7 +202,9 @@ export function render_question_screen(opts: {
 //============================================
 
 // Flash feedback: highlight chosen button, show praise, resolve after delay.
-// On wrong, also highlight the correct answer and show teaching panel.
+// On correct: auto-advance after FEEDBACK_CORRECT_MS.
+// On wrong: show feedback + teaching panel, wait minimum FEEDBACK_WRONG_MS,
+// then render "Tap to continue" hint and wait for click/Enter/Space before advancing.
 export async function flash_answer_feedback(
 	scene_el: HTMLElement,
 	result: AnswerResult,
@@ -271,9 +289,46 @@ export async function flash_answer_feedback(
 		scene_el.appendChild(teaching_panel);
 	}
 
-	// Wait for feedback duration
-	const delay = is_correct ? FEEDBACK_CORRECT_MS : FEEDBACK_WRONG_MS;
-	await new Promise((resolve) => setTimeout(resolve, delay));
+	if (is_correct) {
+		// CORRECT: wait and auto-advance
+		await new Promise<void>((resolve) => setTimeout(resolve, FEEDBACK_CORRECT_MS));
+	} else {
+		// WRONG: wait minimum time, then render hint and wait for input
+		await new Promise<void>((resolve) => setTimeout(resolve, FEEDBACK_WRONG_MS));
+
+		// Create "Tap to continue" hint chip (fixed bottom-center, pulsing)
+		const hint_chip = document.createElement("div");
+		hint_chip.className = "continue-hint";
+		hint_chip.textContent = "Tap to continue";
+		scene_el.appendChild(hint_chip);
+
+		// Wait for any of: click on scene, Enter key, Space key
+		await new Promise<void>((resolve) => {
+			function on_click(): void {
+				cleanup();
+				resolve();
+			}
+
+			function on_keydown(e: KeyboardEvent): void {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					cleanup();
+					resolve();
+				}
+			}
+
+			function cleanup(): void {
+				scene_el.removeEventListener("click", on_click);
+				window.removeEventListener("keydown", on_keydown);
+			}
+
+			scene_el.addEventListener("click", on_click);
+			window.addEventListener("keydown", on_keydown);
+		});
+
+		// Remove hint chip
+		hint_chip.remove();
+	}
 
 	// Clean up
 	if (chosen_btn) {

@@ -1,16 +1,17 @@
 // Fixed slot identity palette: 8 colors locked to positions 1-8.
-// Used for left stripe and keyboard badge on each choice button.
-// Colors are stable across all themes and audited for 5.5:1+ contrast vs white.
+// Button fills are set inline from these colors; they are stable across
+// all themes and audited for 5.5:1+ contrast vs white text.
+// Warm/cool alternation for perceptual separation.
 
 export const SLOT_ACCENTS: readonly string[] = [
-	"#d40000", // 1 coral red
-	"#6c6c00", // 2 sunflower (dark yellow)
-	"#3b7600", // 3 lime green
-	"#a719db", // 4 violet
-	"#007576", // 5 cyan
-	"#b74300", // 6 orange
-	"#cc0066", // 7 pink
-	"#00775f", // 8 teal
+	"#d40000", // 1 RED
+	"#007a00", // 2 GREEN
+	"#003fff", // 3 BLUE
+	"#c80085", // 4 MAGENTA
+	"#b74300", // 5 ORANGE
+	"#00775f", // 6 TEAL
+	"#a719db", // 7 PURPLE
+	"#6c6c00", // 8 YELLOW-GREEN
 ] as const;
 
 //============================================

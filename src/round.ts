@@ -2,21 +2,32 @@
 
 import type { Bundle } from "./types/stem";
 import type { Question, RoundConfig, RoundState, AnswerResult } from "./types/question";
-import { build_round_state, pick_next_question, RetryQueue } from "./question_builder";
+import { build_round_state, pick_next_question, RetryQueue, SubjectDeck } from "./question_builder";
 import { apply_correct, apply_wrong } from "./scoring";
 
 //============================================
 
 let global_retry_queue: RetryQueue;
+let global_subject_deck: SubjectDeck;
 
 //============================================
 
 export function start_round(
-	_bundle: Bundle,
+	bundle: Bundle,
 	config: RoundConfig
 ): RoundState {
 	const round = build_round_state(config);
 	global_retry_queue = new RetryQueue();
+
+	// Build the initial pool for the deck
+	const selected_stems = bundle.all_stems.filter((stem) => {
+		const lesson_num_str = stem.lesson.substring(1);
+		const lesson_num = Number(lesson_num_str);
+		return config.selected_lesson_numbers.includes(lesson_num);
+	});
+	const pool = selected_stems.length > 0 ? selected_stems : bundle.all_stems;
+
+	global_subject_deck = new SubjectDeck(pool);
 	return round;
 }
 
@@ -27,8 +38,8 @@ export function next_question(
 	_round: RoundState,
 	_retry: undefined
 ): Question {
-	// Use global retry queue (placeholder for RetryHelper reference in signature)
-	const question = pick_next_question(bundle, _round.config, global_retry_queue);
+	// Use global retry queue and subject deck (placeholder for RetryHelper reference in signature)
+	const question = pick_next_question(bundle, _round.config, global_retry_queue, global_subject_deck);
 	global_retry_queue.increment_questions();
 	return question;
 }

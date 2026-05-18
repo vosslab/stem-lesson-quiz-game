@@ -116,9 +116,4 @@ python3 tools/contrast_calculator.py --check '#7b7737'
 - Every foreground/background pair in our problems should be checked before use.
 - When in doubt, use the WebAIM checker or `tools/contrast_calculator.py`.
 - This doc documents the standard. Updating the existing color palette in
-  [QUESTION_STATEMENT_EMPHASIS.md](QUESTION_STATEMENT_EMPHASIS.md) is a follow-up task.
 
-## Related documentation
-
-- [QUESTION_STATEMENT_EMPHASIS.md](QUESTION_STATEMENT_EMPHASIS.md) - Current color definitions
-- [COLOR_TEXT_IN_WEBWORK.md](COLOR_TEXT_IN_WEBWORK.md) - Color text rendering in WeBWorK

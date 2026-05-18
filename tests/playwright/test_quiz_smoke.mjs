@@ -94,8 +94,15 @@ async function main() {
 		console.log("[quiz-smoke] Pressing '1' key...");
 		await page.keyboard.press("1");
 
-		// Wait for response animation
-		await page.waitForTimeout(1000);
+		// Wait for feedback animation (FEEDBACK_WRONG_MS or FEEDBACK_CORRECT_MS)
+		await page.waitForTimeout(700);
+
+		// If wrong answer, must press Enter to advance past the continue-hint wait
+		console.log("[quiz-smoke] Pressing Enter to confirm and advance...");
+		await page.keyboard.press("Enter");
+
+		// Wait for transition to next question
+		await page.waitForTimeout(500);
 
 		const afterInputText = await page.locator("#app").textContent();
 

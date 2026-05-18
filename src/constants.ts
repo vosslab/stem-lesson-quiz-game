@@ -32,7 +32,10 @@ export const RETRY_QUEUE_RESURFACE_MAX = 5;
 
 // Feedback timing (ms)
 export const FEEDBACK_CORRECT_MS = 800;
-export const FEEDBACK_WRONG_MS = 1600;
+// FEEDBACK_WRONG_MS: minimum gate before input accepted on wrong answer.
+// Allows shake (350ms) + glow-in animations to finish before student can click
+// the continue hint. Set to 600ms to ensure visual feedback is visible before input.
+export const FEEDBACK_WRONG_MS = 600;
 export const STREAK_BANNER_MS = 1200;
 
 // Storage

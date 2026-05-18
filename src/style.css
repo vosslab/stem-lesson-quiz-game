@@ -577,6 +577,48 @@ body {
 	box-shadow: var(--shadow-card);
 }
 
+/* Home/quit button in top-right corner of play screen */
+.play-corner-nav {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	z-index: 50;
+}
+
+.btn-home-quit {
+	background: var(--card);
+	border: 2px solid var(--accent);
+	border-radius: 8px;
+	color: var(--accent);
+	font-family: var(--font-rounded);
+	font-size: 14px;
+	font-weight: 700;
+	padding: 10px 16px;
+	cursor: pointer;
+	transition: all var(--transition-fast);
+	min-height: 44px;
+	min-width: 44px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.btn-home-quit:hover {
+	background: var(--accent);
+	color: var(--card);
+	transform: scale(1.05);
+}
+
+.btn-home-quit:active {
+	transform: scale(0.98);
+	box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.btn-home-quit:focus {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
 /* Direction palette tokens: two stable colors used wherever direction needs
    to be conveyed (chip background, card stripe, prompt accent). */
 :root {
@@ -709,7 +751,6 @@ body {
 }
 
 .choice-button {
-	background: var(--card);
 	border: none;
 	border-radius: var(--radius-button);
 	font-family: var(--font-rounded);
@@ -718,7 +759,6 @@ body {
 	padding: 24px 16px 24px 44px;
 	cursor: pointer;
 	transition: all var(--transition-fast);
-	box-shadow: var(--shadow-card);
 	text-align: center;
 	word-wrap: break-word;
 	min-height: 80px;
@@ -727,17 +767,10 @@ body {
 	justify-content: center;
 	position: relative;
 	overflow: hidden;
-}
-
-/* PERMANENT SLOT IDENTITY: left stripe (channel 1) */
-.slot-stripe {
-	position: absolute;
-	left: 0;
-	top: 6px;
-	bottom: 6px;
-	width: 8px;
-	border-radius: 4px;
-	pointer-events: none;
+	/* Juicy gloss: linear gradient overlay for 3D toy press effect */
+	background-image: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.12) 100%);
+	/* Inset highlight + shadow for tactile depth */
+	box-shadow: inset 0 2px 0 rgba(255,255,255,0.35), inset 0 -3px 0 rgba(0,0,0,0.18), 0 6px 0 rgba(0,0,0,0.25), var(--shadow-card);
 }
 
 /* PERMANENT SLOT IDENTITY: keyboard badge showing slot number (channel 1) */
@@ -753,7 +786,9 @@ body {
 	justify-content: center;
 	font-size: 14px;
 	font-weight: 900;
-	color: #ffffff;
+	background: rgba(255,255,255,0.9);
+	border: 2px solid rgba(0,0,0,0.25);
+	color: #1c2a3a;
 	pointer-events: none;
 	z-index: 5;
 }
@@ -779,28 +814,10 @@ body {
 }
 
 .choice-button:active {
-	box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+	transform: translateY(2px);
+	box-shadow: inset 0 2px 0 rgba(255,255,255,0.35), inset 0 -3px 0 rgba(0,0,0,0.18), 0 4px 0 rgba(0,0,0,0.25), var(--shadow-card);
 }
 
-.choice-button.btn-1 {
-	background: var(--btn-1);
-	color: #ffffff;
-}
-
-.choice-button.btn-2 {
-	background: var(--btn-2);
-	color: #1c2a3a;
-}
-
-.choice-button.btn-3 {
-	background: var(--btn-3);
-	color: #1c2a3a;
-}
-
-.choice-button.btn-4 {
-	background: var(--btn-4);
-	color: #ffffff;
-}
 
 /* FEEDBACK OVERLAY STYLES: All feedback is now visual-channel 3 (transient state).
    The button's themed fill (channel 2) NEVER changes. Slot identity stripe and badge
@@ -936,13 +953,6 @@ body {
 	pointer-events: none;
 }
 
-/* During feedback display, dim sibling buttons to spotlight the feedback pair. */
-.choices-grid.feedback-active .choice-button:not(.feedback-correct-revealed):not(.feedback-wrong):not(.feedback-correct) {
-	opacity: 0.25;
-	filter: grayscale(0.85);
-	transition: opacity 200ms ease, filter 200ms ease;
-}
-
 .praise-chip {
 	background: var(--accent);
 	color: #ffffff;
@@ -1016,6 +1026,27 @@ body {
 
 .teaching-row:last-child {
 	margin-bottom: 0;
+}
+
+.continue-hint {
+	position: fixed;
+	bottom: 40px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: var(--accent);
+	color: #ffffff;
+	padding: 12px 28px;
+	border-radius: 999px;
+	font-size: 16px;
+	font-weight: 700;
+	z-index: 160;
+	pointer-events: none;
+	animation: hint-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+	0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+	50% { opacity: 0.7; transform: translateX(-50%) scale(1.05); }
 }
 
 .teaching-stem {

@@ -165,6 +165,7 @@ function render_question(round: RoundState): void {
 		question: q,
 		round,
 		on_choice: (chosen) => handle_choice(round, chosen),
+		on_home: () => transition({ kind: "home" }),
 	});
 	set_root_content(screen);
 	active_unbind_keys = bind_play_keys({

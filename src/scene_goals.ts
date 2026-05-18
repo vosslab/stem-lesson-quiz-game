@@ -71,7 +71,7 @@ export function render_goals_screen(opts: GoalsOpts): HTMLElement {
 		const reward = document.createElement("div");
 		reward.classList.add("scene_goals_reward");
 		if (prog.completed) {
-			reward.innerHTML = `<span class="check">✓</span> +${goal.reward_coins}`;
+			reward.innerHTML = `<span class="check">\u2713</span> +${goal.reward_coins}`;
 		} else {
 			reward.textContent = `+${goal.reward_coins}`;
 		}
