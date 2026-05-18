@@ -45,7 +45,7 @@ export function render_question_screen(opts: {
 	const container = document.createElement("div");
 	container.className = "scene_play";
 
-	// Top bar: streak, score, progress, session counter
+	// Top bar: streak, coins this round, progress, session counter
 	const top_bar = document.createElement("div");
 	top_bar.className = "play-top-bar";
 
@@ -53,9 +53,10 @@ export function render_question_screen(opts: {
 	streak_counter.className = "streak-counter";
 	streak_counter.textContent = `Streak: ${round.current_streak}`;
 
-	const score_display = document.createElement("div");
-	score_display.className = "score-display";
-	score_display.textContent = `Score: ${round.score}`;
+	const coins_display = document.createElement("div");
+	coins_display.className = "score-display";
+	// Score system removed: show coins earned this round as the arcade number.
+	coins_display.textContent = `Coins: ${round.coins_earned}`;
 
 	// Progress indicator: dots for short rounds, plain counter for endless.
 	// Cap dots at 20 so a 999-question endless round does not tile the screen.
@@ -85,7 +86,7 @@ export function render_question_screen(opts: {
 	session_counter.textContent = `Today: ${answered_count} answered`;
 
 	top_bar.appendChild(streak_counter);
-	top_bar.appendChild(score_display);
+	top_bar.appendChild(coins_display);
 	top_bar.appendChild(progress_dots);
 	top_bar.appendChild(session_counter);
 
@@ -96,26 +97,18 @@ export function render_question_screen(opts: {
 	question_card.className = "question-card";
 	question_card.setAttribute("data-direction", question.direction);
 
+	// M2: kid-readable chip label. Keep colored chip styling, drop engineer-speak arrow.
 	const direction_chip = document.createElement("div");
 	direction_chip.className = "direction-chip";
 	direction_chip.setAttribute("data-direction", question.direction);
-	const chip_from = document.createElement("span");
-	chip_from.className = "chip-label chip-from";
-	const chip_arrow = document.createElement("span");
-	chip_arrow.className = "chip-arrow";
-	chip_arrow.textContent = "->";
-	const chip_to = document.createElement("span");
-	chip_to.className = "chip-label chip-to";
+	const chip_label = document.createElement("span");
+	chip_label.className = "chip-label chip-from";
 	if (question.direction === "stem_to_meaning") {
-		chip_from.textContent = "STEM";
-		chip_to.textContent = "MEANING";
+		chip_label.textContent = "Pick the meaning";
 	} else {
-		chip_from.textContent = "MEANING";
-		chip_to.textContent = "STEM";
+		chip_label.textContent = "Pick the stem";
 	}
-	direction_chip.appendChild(chip_from);
-	direction_chip.appendChild(chip_arrow);
-	direction_chip.appendChild(chip_to);
+	direction_chip.appendChild(chip_label);
 
 	const direction_label = document.createElement("div");
 	direction_label.className = "direction-label";
@@ -342,6 +335,9 @@ export async function flash_answer_feedback(
 			teaching_panel.appendChild(hint_chip);
 
 			scene_el.appendChild(teaching_panel);
+			// B1: hide mascot on mobile so it does not cover teaching panel.
+			// CSS gates this to viewport <= 768px via .teaching-active body class.
+			document.body.classList.add("teaching-active");
 		}
 	}
 
@@ -406,6 +402,8 @@ export async function flash_answer_feedback(
 	praise_chip.remove();
 	if (teaching_panel !== null) {
 		teaching_panel.remove();
+		// B1: restore mascot visibility once teaching panel is gone.
+		document.body.classList.remove("teaching-active");
 	}
 	set_mascot_state(mascot_wrapper as HTMLElement, "idle");
 }

@@ -16,7 +16,8 @@ game that loads a precomputed JSON bundle and runs entirely client-side.
 
 ## Major TypeScript modules
 
-- Game loop: `init.ts`, `round.ts`, `question_builder.ts`, `scoring.ts`.
+- Game loop: `init.ts`, `round.ts`, `question_builder.ts`, `scoring.ts`
+  (in-round streak counters; `best_streak` persisted via `init.ts`).
 - Scene controllers: `scene_home.ts`, `scene_results.ts`, `scene_shop.ts`,
   `scene_mastery.ts`, `scene_goals.ts`, with `screen_state.ts` driving
   transitions.

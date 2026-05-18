@@ -17,9 +17,9 @@ export interface HomeScreenOptions {
 	bundle: Bundle;
 	selected_lessons: number[];
 	last_mode_id: string | null;
-	best_score: number;
 	best_streak: number;
 	coin_balance: number;
+	lifetime_coins: number;
 	daily_goal_progress: {
 		completed: number;
 		total: number;
@@ -50,7 +50,7 @@ const GAME_MODES: GameMode[] = [
 	{
 		id: "challenge",
 		title: "Challenge",
-		tagline: "Longer score attack",
+		tagline: "Longer coin run",
 		icon: "!!",
 		question_count: 25,
 		endless: false,
@@ -72,9 +72,9 @@ export function render_home_screen(opts: HomeScreenOptions): HTMLElement {
 		bundle,
 		selected_lessons,
 		last_mode_id,
-		best_score,
 		best_streak,
 		coin_balance,
+		lifetime_coins,
 		daily_goal_progress,
 		mastery_count,
 		last_choices_by_mode,
@@ -99,20 +99,21 @@ export function render_home_screen(opts: HomeScreenOptions): HTMLElement {
 	title.textContent = "Stems Quiz";
 	header.appendChild(title);
 
-	// Stats row: best score, best streak, coins, daily goal, mastery
+	// Stats row: lifetime coins, best streak, coins, daily goal, mastery
 	const stats_row = document.createElement("div");
 	stats_row.className = "home-stats-row";
 
-	const best_score_el = document.createElement("div");
-	best_score_el.className = "stat-item";
-	const score_label = document.createElement("div");
-	score_label.className = "stat-label";
-	score_label.textContent = "Best Score";
-	const score_value = document.createElement("div");
-	score_value.className = "stat-value";
-	score_value.textContent = String(best_score);
-	best_score_el.appendChild(score_label);
-	best_score_el.appendChild(score_value);
+	const lifetime_el = document.createElement("div");
+	lifetime_el.className = "stat-item";
+	const lifetime_label = document.createElement("div");
+	lifetime_label.className = "stat-label";
+	lifetime_label.textContent = "Lifetime Coins";
+	const lifetime_value = document.createElement("div");
+	lifetime_value.className = "stat-value";
+	// Cumulative coins ever earned; never decreases on spend.
+	lifetime_value.textContent = String(lifetime_coins);
+	lifetime_el.appendChild(lifetime_label);
+	lifetime_el.appendChild(lifetime_value);
 
 	const best_streak_el = document.createElement("div");
 	best_streak_el.className = "stat-item";
@@ -158,7 +159,7 @@ export function render_home_screen(opts: HomeScreenOptions): HTMLElement {
 	mastery_el.appendChild(mastery_label);
 	mastery_el.appendChild(mastery_value);
 
-	stats_row.appendChild(best_score_el);
+	stats_row.appendChild(lifetime_el);
 	stats_row.appendChild(best_streak_el);
 	stats_row.appendChild(coins_el);
 	stats_row.appendChild(daily_goal_el);
@@ -288,6 +289,9 @@ export function render_home_screen(opts: HomeScreenOptions): HTMLElement {
 				endless: mode.endless,
 				target_question_count: mode.question_count,
 				choices_per_question: last_choices_by_mode[mode.id] ?? DEFAULT_CHOICES_PER_QUESTION,
+				// Mode gate: Quick Run (10 Q) disables retry to avoid in-round duplicates.
+				// Challenge (25 Q) + Endless turn it on for spaced-repetition pedagogy.
+				enable_retry: mode.endless || mode.question_count > 10,
 			};
 			on_play(config);
 		});

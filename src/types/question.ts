@@ -20,8 +20,6 @@ export type AnswerResult = {
 	question: Question;
 	chosen: string;
 	correct: boolean;
-	points_awarded: number;
-	streak_after: number;
 };
 
 export type RoundConfig = {
@@ -29,6 +27,9 @@ export type RoundConfig = {
 	endless: boolean;
 	target_question_count: number;
 	choices_per_question: number;
+	// Mode gate: Quick Run (10 Q) disables retry to avoid in-round duplicates.
+	// Challenge (25 Q) and Endless enable retry for spaced-repetition pedagogy.
+	enable_retry: boolean;
 };
 
 export type RoundState = {
@@ -38,9 +39,9 @@ export type RoundState = {
 	wrong_count: number;
 	current_streak: number;
 	longest_streak: number;
-	score: number;
 	coins_earned: number;
 	answers: AnswerResult[];
-	retry_queue: RetryQueue;
+	// null when config.enable_retry=false (Quick Run); RetryQueue instance otherwise.
+	retry_queue: RetryQueue | null;
 	subject_deck: SubjectDeck;
 };

@@ -107,13 +107,6 @@ export const GOAL_POOL: DailyGoal[] = [
 		tier: "hard",
 	},
 	{
-		id: "beat_score",
-		display_text: "Beat your best score",
-		target: 1,
-		reward_coins: 75,
-		tier: "hard",
-	},
-	{
 		id: "master_3_stems",
 		display_text: "Master 3 stems today",
 		target: 3,
@@ -180,6 +173,9 @@ export function ensure_today(): DailyGoalsToday {
 			stems_mastered_today: 0,
 			seconds_played: 0,
 			goal_rewards_count_today: 0,
+			// M1 fix: persisted lifetime-of-day counter; survives the
+			// completed=false reset that grant_goal_rewards performs.
+			goals_completed_today: 0,
 		};
 
 		mutate_save((save) => {
@@ -229,6 +225,19 @@ export function record_answer(
 			if (goal.id === "five_in_a_row") {
 				if (was_correct && current_streak > prog.current) {
 					prog.current = current_streak;
+				}
+				if (prog.current >= goal.target && !prog.completed) {
+					prog.completed = true;
+					newly_completed.push(goal);
+				}
+			}
+
+			// Track for "Beat your best streak". save.best_streak only
+			// refreshes at end-of-round (init.ts), so during play it still
+			// holds the prior lifetime best - safe to compare directly.
+			if (goal.id === "beat_streak") {
+				if (was_correct && current_streak > save.best_streak) {
+					prog.current = 1;
 				}
 				if (prog.current >= goal.target && !prog.completed) {
 					prog.completed = true;
@@ -336,7 +345,12 @@ export function grant_goal_rewards(goals: DailyGoal[]): number {
 			// Grant reward if goal marked as completed (not already paid out).
 			if (progress.completed && remaining_cap > 0) {
 				save.coins += goal.reward_coins;
+				save.lifetime_coins += goal.reward_coins;
 				save.stats_today.goal_rewards_count_today += 1;
+				// M1 fix: bump persisted completion counter BEFORE clearing
+				// the completed flag, so check_and_grant_completion_bonuses
+				// can still count this goal toward the 3/5 thresholds.
+				save.stats_today.goals_completed_today += 1;
 				coins_granted += goal.reward_coins;
 				remaining_cap -= 1;
 
@@ -359,9 +373,9 @@ export function check_and_grant_completion_bonuses(): number {
 			return;
 		}
 
-		const completed_count = save.daily_goals.progress.filter(
-			(p) => p.completed
-		).length;
+		// M1 fix: read the persisted day-counter instead of filtering on
+		// prog.completed (which grant_goal_rewards just cleared to false).
+		const completed_count = save.stats_today.goals_completed_today;
 		const bonuses = save.daily_goals.completion_bonuses_awarded_today;
 
 		// Check cap: cannot grant more than DAILY_GOAL_REWARD_CAP awards per day.
@@ -372,6 +386,7 @@ export function check_and_grant_completion_bonuses(): number {
 		// Bonus for 3 goals completed (counts as 1 award, grants 50 coins).
 		if (completed_count >= 3 && !bonuses.three && remaining_cap >= 1) {
 			save.coins += 50;
+			save.lifetime_coins += 50;
 			save.stats_today.goal_rewards_count_today += 1;
 			bonus_coins += 50;
 			bonuses.three = true;
@@ -381,6 +396,7 @@ export function check_and_grant_completion_bonuses(): number {
 		// Bonus for all 5 goals completed (counts as 1 award, grants 150 coins).
 		if (completed_count >= 5 && !bonuses.five && remaining_cap >= 1) {
 			save.coins += 150;
+			save.lifetime_coins += 150;
 			save.stats_today.goal_rewards_count_today += 1;
 			bonus_coins += 150;
 			bonuses.five = true;

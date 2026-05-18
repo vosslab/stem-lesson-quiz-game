@@ -8,36 +8,95 @@ import { STORAGE_KEY } from "./constants";
 
 let cached_save: SaveSchemaV1 | null = null;
 
-function read_raw(): SaveSchemaV1 {
-	const raw = localStorage.getItem(STORAGE_KEY);
-	if (raw === null) {
-		return default_save();
-	}
-	const parsed = JSON.parse(raw) as { version?: number; last_choices_by_mode?: unknown };
-	if (parsed.version !== SAVE_SCHEMA_VERSION) {
-		// Schema drift: discard old save rather than half-migrate.
-		// Future versions add a migration switch here.
-		return default_save();
-	}
-	const save = parsed as SaveSchemaV1;
+// Typed shape of fields that may appear on older saves but are no longer
+// declared on SaveSchemaV1 (or have since been renamed). Reading the parsed
+// blob through this type keeps the migration block free of `as any` casts.
+type LegacySaveFields = {
+	version?: number;
+	lifetime_coins?: number;
+	// v1 had a top-level best_score (scoring system removed in favor of
+	// lifetime_coins). Drop on migrate.
+	best_score?: number;
+	// v1 had a top-level muted boolean; nothing reads it after the audio refactor.
+	// Drop on migrate intentionally; document the lost preference.
+	muted?: boolean;
+	stats_today?: {
+		date?: string;
+		questions_answered?: number;
+		stems_mastered_today?: number;
+		seconds_played?: number;
+		goal_rewards_count_today?: number;
+		goals_completed_today?: number;
+		// Old field name pre-rename.
+		goal_rewards_granted?: number;
+	} | null;
+	daily_goals?: {
+		completion_bonuses_awarded_today?: { three: boolean; five: boolean };
+	} | null;
+};
 
-	// Backward-compat: if daily_goals exists but lacks completion_bonuses_awarded_today, add it.
-	if (save.daily_goals && !save.daily_goals.completion_bonuses_awarded_today) {
-		save.daily_goals.completion_bonuses_awarded_today = {
+function migrate_to_v2(legacy: LegacySaveFields): void {
+	// v1 -> v2: drop defunct top-level fields. `muted` is intentionally dropped
+	// (no consumer remains); kids on old saves lose this preference silently.
+	if (legacy.best_score !== undefined) {
+		delete legacy.best_score;
+	}
+	if (legacy.muted !== undefined) {
+		delete legacy.muted;
+	}
+	// Seed lifetime_coins if old save predates it.
+	if (typeof legacy.lifetime_coins !== "number") {
+		legacy.lifetime_coins = 0;
+	}
+
+	// stats_today fixups: rename old field, seed new counters.
+	const stats = legacy.stats_today;
+	if (stats) {
+		if (stats.goal_rewards_granted !== undefined) {
+			// Renamed; reset rather than copy stale count forward.
+			stats.goal_rewards_count_today = 0;
+			delete stats.goal_rewards_granted;
+		}
+		// M2 fix: distinguish undefined from valid 0.
+		if (stats.goal_rewards_count_today === undefined) {
+			stats.goal_rewards_count_today = 0;
+		}
+		// M1 fix: new persisted counter; seed at 0 for migrated saves.
+		if (stats.goals_completed_today === undefined) {
+			stats.goals_completed_today = 0;
+		}
+	}
+
+	// daily_goals fixup: seed completion bonus tracker if missing.
+	const dg = legacy.daily_goals;
+	if (dg && !dg.completion_bonuses_awarded_today) {
+		dg.completion_bonuses_awarded_today = {
 			three: false,
 			five: false,
 		};
 	}
 
-	// Backward-compat: if stats_today uses old field name (goal_rewards_granted), reset for safety.
-	if (save.stats_today && (save.stats_today as any).goal_rewards_granted !== undefined) {
-		save.stats_today.goal_rewards_count_today = 0;
-		delete (save.stats_today as any).goal_rewards_granted;
-	} else if (save.stats_today && !save.stats_today.goal_rewards_count_today) {
-		save.stats_today.goal_rewards_count_today = 0;
+	legacy.version = SAVE_SCHEMA_VERSION;
+}
+
+function read_raw(): SaveSchemaV1 {
+	const raw = localStorage.getItem(STORAGE_KEY);
+	if (raw === null) {
+		return default_save();
+	}
+	const parsed = JSON.parse(raw) as unknown;
+	// Single boundary cast: route the parsed JSON through the typed migration shape.
+	const legacy = parsed as LegacySaveFields;
+
+	// v1 -> v2 in-place migration (also covers fresh v2 saves: idempotent).
+	if (legacy.version === 1 || legacy.version === SAVE_SCHEMA_VERSION) {
+		migrate_to_v2(legacy);
+	} else {
+		// Unknown / future / corrupt version: discard rather than half-migrate.
+		return default_save();
 	}
 
-	return save;
+	return legacy as unknown as SaveSchemaV1;
 }
 
 export function load_save(): SaveSchemaV1 {

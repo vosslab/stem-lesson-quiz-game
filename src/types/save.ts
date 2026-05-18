@@ -5,7 +5,7 @@ import type { StemId } from "../brands";
 import type { ThemeId } from "./cosmetic";
 import type { DailyGoalsToday } from "./daily_goal";
 
-export const SAVE_SCHEMA_VERSION = 1 as const;
+export const SAVE_SCHEMA_VERSION = 2 as const;
 
 export type MasteryCounters = {
 	correct: number;
@@ -19,14 +19,19 @@ export type StatsToday = {
 	stems_mastered_today: number;
 	seconds_played: number;
 	goal_rewards_count_today: number;
+	// M1 fix: persisted counter of goals completed today. Incremented in
+	// grant_goal_rewards (which clears prog.completed after paying out), so
+	// check_and_grant_completion_bonuses can no longer be blinded by the reset.
+	// Reset on day rollover with the rest of stats_today.
+	goals_completed_today: number;
 };
 
 export type SaveSchemaV1 = {
 	version: typeof SAVE_SCHEMA_VERSION;
 	coins: number;
+	lifetime_coins: number;
 	owned_themes: ThemeId[];
 	equipped_theme: ThemeId;
-	best_score: number;
 	best_streak: number;
 	lesson_selection: number[];
 	last_mode_id: string | null;
@@ -40,9 +45,9 @@ export function default_save(): SaveSchemaV1 {
 	const fresh: SaveSchemaV1 = {
 		version: SAVE_SCHEMA_VERSION,
 		coins: 0,
+		lifetime_coins: 0,
 		owned_themes: ["sky"],
 		equipped_theme: "sky",
-		best_score: 0,
 		best_streak: 0,
 		lesson_selection: [1],
 		last_mode_id: null,

@@ -18,7 +18,7 @@ import { load_save, mutate_save } from "./persist";
 import { get_state, subscribe, transition } from "./screen_state";
 
 import { start_round, answer, next_question, is_round_over } from "./round";
-import { award_correct, award_round_end, get_balance } from "./coins";
+import { award_correct, award_mastery, award_round_end, get_balance } from "./coins";
 import {
 	ensure_today,
 	record_answer as record_goal_answer,
@@ -87,9 +87,9 @@ function render_home(): void {
 		bundle: cached_bundle,
 		selected_lessons: save.lesson_selection,
 		last_mode_id: save.last_mode_id,
-		best_score: save.best_score,
 		best_streak: save.best_streak,
 		coin_balance: get_balance(),
+		lifetime_coins: save.lifetime_coins,
 		daily_goal_progress: { completed, total: today.progress.length },
 		mastery_count: summary.mastered,
 		last_choices_by_mode: save.last_choices_by_mode,
@@ -147,6 +147,8 @@ function render_home(): void {
 					endless: mode_config.endless,
 					target_question_count: mode_config.target_question_count,
 					choices_per_question: save.last_choices_by_mode[mode_config.id] ?? DEFAULT_CHOICES_PER_QUESTION,
+					// Mode gate: matches scene_home.ts logic - Quick Run skips retry.
+					enable_retry: mode_config.endless || mode_config.target_question_count > 10,
 				};
 				handle_mode_selection(config);
 			}
@@ -206,6 +208,9 @@ async function handle_choice(round: RoundState, chosen: string): Promise<void> {
 	if (mastery_result.newly_mastered) {
 		const master_result = record_master_stem();
 		completed_goals.push(...master_result.newly_completed);
+		// H1m: always-on coin bonus when a stem flips to mastered.
+		const mastery_coins = award_mastery();
+		round.coins_earned += mastery_coins;
 	}
 	const goal_coins = grant_goal_rewards(completed_goals);
 	round.coins_earned += goal_coins;
@@ -235,12 +240,8 @@ function finish_round(round: RoundState): void {
 	round.coins_earned += end_coins;
 
 	const save = load_save();
-	const new_best_score = round.score > save.best_score;
 	const new_best_streak = round.longest_streak > save.best_streak;
 	mutate_save((s) => {
-		if (round.score > s.best_score) {
-			s.best_score = round.score;
-		}
 		if (round.longest_streak > s.best_streak) {
 			s.best_streak = round.longest_streak;
 		}
@@ -250,7 +251,7 @@ function finish_round(round: RoundState): void {
 	const results = render_results_screen({
 		round,
 		coins_earned: round.coins_earned,
-		new_best_score,
+		lifetime_coins: save.lifetime_coins,
 		new_best_streak,
 		on_play_again: () => {
 			const fresh = start_round(cached_bundle, round.config);

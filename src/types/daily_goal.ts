@@ -12,7 +12,6 @@ export type GoalId =
 	| "accuracy_80"
 	| "flawless_10"
 	| "beat_streak"
-	| "beat_score"
 	| "practice_weak_stem"
 	| "master_3_stems"
 	| "use_different_theme"

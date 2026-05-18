@@ -59,7 +59,7 @@ Correct answers auto-advance after 800ms (no explicit action required).
 
 ### End of round
 
-After the final question, the round ends and transitions back to the home screen. Daily goals and mastery progress are updated.
+After the final question, the round ends and transitions back to the home screen. Daily goals and mastery progress are updated. Coin rewards are the primary reward signal: per-question coins (base + ramp + streak tiers), mastery bonuses, plus round-end bonuses (good round at >= 60% accuracy, flawless round at 10/10).
 
 ## Keyboard controls
 
@@ -134,6 +134,7 @@ Game state is saved to browser localStorage under the key `stems_quiz_v1`. Saved
 - **Mastery data**: per-stem correct counts.
 - **Theme selection**: active theme name.
 - **Coins and shop progress**: theme unlock states.
+- **Lifetime coins** (`lifetime_coins`): cumulative coins earned across all sessions; never decremented by `spend()`.
 
 Clearing browser cache will erase all save data. No cloud sync or account login required.
 

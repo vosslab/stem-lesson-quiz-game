@@ -1,12 +1,75 @@
 ## 2026-05-18
 
+### Additions and New Features
+
+**Lifetime coins stat.** Added `lifetime_coins: number` to [src/types/save.ts](../src/types/save.ts) SaveSchemaV1; every coin award path in [src/coins.ts](../src/coins.ts) (`award_correct`, `award_mastery`, `award_round_end`) and [src/daily_goals.ts](../src/daily_goals.ts) (`grant_goal_rewards`, completion bonuses) now bumps `save.lifetime_coins` alongside `save.coins`. `spend()` does NOT touch lifetime. Surfaced as a "Lifetime Coins" chip on the home stats row ([src/scene_home.ts](../src/scene_home.ts)) and a "Lifetime Coins" line on the results screen ([src/scene_results.ts](../src/scene_results.ts)).
+
+### Behavior or Interface Changes
+
+**RetryQueue restored as mode-gated.** Reconsidered the earlier kill (see Removals below): retry queue is pedagogically right for longer modes, but skipped for Quick Run where in-round duplicates feel buggy in a 10-Q pool. Restored `RetryQueue` class, `RETRY_QUEUE_RESURFACE_MIN`/`RETRY_QUEUE_RESURFACE_MAX` constants, `SubjectDeck.remove_from_remaining`, and the `retry_queue` slot on RoundState (now `RetryQueue | null`). Added `enable_retry: boolean` to RoundConfig in [src/types/question.ts](../src/types/question.ts); [src/scene_home.ts](../src/scene_home.ts) sets it via `mode.endless || mode.question_count > 10` (Quick Run = false, Challenge = true, Endless = true). [src/round.ts](../src/round.ts) `start_round` only instantiates the queue when `config.enable_retry`; `next_question` only increments when present; `answer` only pushes missed stems when present. [src/question_builder.ts](../src/question_builder.ts) `pick_next_question` accepts `RetryQueue | null` and skips the resurface branch when null. Quick Run keeps the deck-only path so no in-round duplicates. Widened resurface gap from 3-5 to 10-20 in [src/constants.ts](../src/constants.ts) so a missed stem in Challenge (25 Q) reappears ~halfway through the round and never twice back-to-back.
+
+**Score system removed; coins are the single number that matters.** Kid eval flagged "score AND coins?? confusing." Killed `score`, `points_awarded`, `streak_after` from [src/types/question.ts](../src/types/question.ts) RoundState/AnswerResult; removed `POINTS_CORRECT` and renamed `STREAK_BONUSES` to `STREAK_BANNERS` (keeps milestone+banner, drops `bonus` field) in [src/constants.ts](../src/constants.ts); gutted [src/scoring.ts](../src/scoring.ts) to streak-only counters; play HUD ([src/ui_rendering.ts](../src/ui_rendering.ts)) and results screen ([src/scene_results.ts](../src/scene_results.ts)) drop the Score line; home stats ([src/scene_home.ts](../src/scene_home.ts)) drops the Best Score chip. [src/feedback.ts](../src/feedback.ts) `streak_banner_for` switched to STREAK_BANNERS. [src/init.ts](../src/init.ts) drops `new_best_score` / `best_score` mutation.
+
+**L1 score x10 display multiplier reverted.** No score left to inflate; the display-only x10 in [src/ui_rendering.ts](../src/ui_rendering.ts), [src/scene_results.ts](../src/scene_results.ts), and [src/scene_home.ts](../src/scene_home.ts) is gone with the score system.
+
+**Coin pacing - lower round-bonus threshold to 60%.** Dropped `ROUND_GOOD_ACCURACY` from 0.8 to 0.6 in [src/constants.ts](../src/constants.ts). The 80% threshold was unreachable for a kid playing at ~60% accuracy, so round bonuses (+25/round) never fired. New pacing target: ~2 full passes (280 questions) at 60% accuracy lands first mascot tier (Huskies/Wildcats/Bison/Knights = 3000 coins). Total at 168 correct @ 60%: ~3550 coins (per-Q ~1650 + mastery ~750 + daily goals ~450 + round bonuses ~700). Marauders (7500) still earned in ~5 passes. No other coin constants changed.
+
+**M2 - Kid-readable direction chip.** Replaced engineer-speak "MEANING -> STEM" / "STEM -> MEANING" chip text in [src/ui_rendering.ts](../src/ui_rendering.ts) with "Pick the stem" / "Pick the meaning". Colored chip styling (orange/purple top-stroke) preserved; only the text content and arrow span changed.
+
+**L1 - Score display x10.** (REVERTED later this day, see "L1 score x10 display multiplier reverted" entry above; score system entirely removed.) Per-question score and best-score now render multiplied by 10 in the play top bar ([src/ui_rendering.ts](../src/ui_rendering.ts)), results screen ([src/scene_results.ts](../src/scene_results.ts)), and home stats ([src/scene_home.ts](../src/scene_home.ts)). Display-only multiply; raw score still persists unchanged in the save schema. Bigger arcade numbers without ripple through coin balances, daily-goal rewards, or theme prices.
+
+**H1-ramp - Continuous per-streak coin ramp.** Added `COINS_STREAK_RAMP_CAP = 30` in [src/constants.ts](../src/constants.ts) and a per-question ramp bonus `min(current_streak, 30)` in [src/coins.ts](../src/coins.ts) `award_correct`, stacked on top of base coin + tier bonuses. Kids now see the coin reward grow with every correct answer in a row instead of plateauing between tiers. New per-Q totals (base 5 + ramp + tiers): 1 -> +6, 3 -> +13, 5 -> +30, 10 -> +75, 20 -> +185, 30+ -> +195 (ramp capped at 30).
+
+**H1l - Earlier coin streak tier at 3.** Added `COINS_STREAK_3 = 5` in [src/constants.ts](../src/constants.ts) and matching `if (round.current_streak >= 3)` branch in [src/coins.ts](../src/coins.ts) `award_correct`. New per-question totals at thresholds: 3 -> +10, 5 -> +25, 10 -> +65, 20 -> +165. Kids feel reward at 3-in-a-row instead of waiting for streak 5.
+
+**H1m - Mastery coin bonus.** Added `COINS_MASTER_STEM = 25` in [src/constants.ts](../src/constants.ts) and new `award_mastery()` helper in [src/coins.ts](../src/coins.ts). Wired into [src/init.ts](../src/init.ts) inside the `mastery_result.newly_mastered` block so the bonus always fires when a stem flips to mastered (not gated by daily goal active). Stacks with streak and base coin awards.
+
+**Docs accuracy.** [docs/CODE_ARCHITECTURE.md](CODE_ARCHITECTURE.md) game-loop bullet now notes `scoring.ts` is streak-counter only after today's score-system removal. [docs/GAME_USAGE.md](GAME_USAGE.md) end-of-round section mentions coins as the primary reward signal; save-data list now includes `lifetime_coins`.
+
 ### Fixes and Maintenance
 
+**B1 - Mascot hides under teaching panel on mobile.** Mascot (140px, fixed bottom-left) was covering the wrong-answer teaching panel on viewports <= 768px. Fix: [src/ui_rendering.ts](../src/ui_rendering.ts) adds body class `teaching-active` when the teaching panel mounts and removes it on cleanup; [src/style.css](../src/style.css) `@media (max-width: 768px) { body.teaching-active .mascot-slot { display: none } }` hides the mascot only in the specific blocker case. Desktop mascot unaffected.
+
+**B2 - Big check/X disc covering button label.** Feedback overlay badge was 56px centered on the button and hid the answer text (kid saw "t" instead of "digit"). Fix: [src/style.css](../src/style.css) shrinks `.feedback-icon.feedback-icon-correct` and `.feedback-icon.feedback-icon-wrong` from 56px centered to 36px top-right corner (top-left already used by the 1-4 slot badge). Button color flash, border glow, and badge-pop animation preserved.
+
 **Global scroll restored on all scenes.** Root cause: `html, body { height: 100%; overflow: hidden }` in [src/style.css](../src/style.css) killed window scroll project-wide. Only `.scene_shop` opted back in via inner `overflow-y: auto; max-height: 100vh`. Result: home, goals, mastery, and results scenes could not scroll past viewport bottom; mascot (fixed bottom-left, 140px) hid lower buttons. Fix is architectural per "fix the design, not the symptom": replaced `html, body { height: 100%; overflow: hidden }` with `min-height: 100%`, removed the band-aid `overflow-y: auto; max-height: 100vh` from `.scene_shop`, and added `padding-bottom: 160px` to `.scene_home`, `.scene_goals`, `.scene_mastery`, `.scene_results` so trailing content clears the fixed mascot. `.scene_shop` already had this padding. Build green (`build_github_pages.sh` pass, 48.8kb main.js, tsc clean).
+
+**Tier-1 audit batch (B1/H1/H3/H4/M1/M2/M3).** Shipped 11-item audit fix batch from 6-reviewer review.
+- **B1 schema bump.** `SAVE_SCHEMA_VERSION` bumped 1 -> 2 in [src/types/save.ts](../src/types/save.ts).
+- **H1 zero `as any` in persist.** [src/persist.ts](../src/persist.ts) migration block now routes the parsed JSON through a typed `LegacySaveFields` shape (single boundary cast). Migration logic reads/writes via the typed shape; no `as any` anywhere in the file.
+- **H3 stale comment.** [src/coins.ts](../src/coins.ts) `award_round_end` comment updated from "Good round: >= 80% accuracy" to ">= ROUND_GOOD_ACCURACY (60%)" to match constant value.
+- **H4 dead `@keyframes badge-pop`.** Removed the centered translate(-50%, -50%) `@keyframes badge-pop` block from [src/style.css](../src/style.css); `badge-pop-corner` is the only consumer after B2.
+- **M1 daily goal completion bonus.** `check_and_grant_completion_bonuses` was filtering on `prog.completed`, but `grant_goal_rewards` clears that flag to false after paying out, so the 3/5 bonus thresholds were always unreachable. Added persisted `goals_completed_today` counter on `StatsToday` ([src/types/save.ts](../src/types/save.ts)); [src/daily_goals.ts](../src/daily_goals.ts) `grant_goal_rewards` increments it before clearing `completed`, and the bonus check now reads the counter. Counter resets on day rollover with the rest of `stats_today`. Schema field add covered by the same v2 bump as B1.
+- **M2 falsy check.** [src/persist.ts](../src/persist.ts) migration uses `=== undefined` instead of `!save.stats_today.goal_rewards_count_today` so valid `0` no longer reseeds.
+- **M3 muted field.** Old top-level `muted: boolean` is intentionally dropped on migrate (no consumer remains after the audio refactor). Documented in the [src/persist.ts](../src/persist.ts) `LegacySaveFields` comment.
+- **H7 L1 entry rephrased.** The "L1 - Score display x10" entry in today's Behavior section is now prefixed with "(REVERTED later this day, ...)" so the historical trail stays intact without misleading the reader.
+- **H2 rephrased 2026-05-17 changelog section ordering per REPO_STYLE.md.** Collapsed duplicate `### Additions`, `### Behavior`, and `### Fixes` headings into one of each, reordered to canonical Additions -> Behavior -> Fixes -> Removals. All content preserved.
+
+### Removals and Deprecations
+
+**RetryQueue removed.** Wrong-answer stems no longer resurface inside the same round. User reported duplicate question in single round (140-stem pool, 10 questions) - retry queue resurfacing was reinserting missed stems, conflicting with the deck-pop expectation. SubjectDeck (Fisher-Yates without replacement + seam-collision protection) is now the only question selector. Deleted `RetryQueue` class and `RETRY_QUEUE_RESURFACE_MIN`/`RETRY_QUEUE_RESURFACE_MAX` constants; dropped `retry_queue` from RoundState and from `pick_next_question` signature; removed `SubjectDeck.remove_from_remaining` (only ever called from the retry-queue resurface path). Files: [src/question_builder.ts](../src/question_builder.ts), [src/round.ts](../src/round.ts), [src/types/question.ts](../src/types/question.ts), [src/constants.ts](../src/constants.ts).
+
+**`best_score` save field removed.** [src/persist.ts](../src/persist.ts) `read_raw` migration drops `best_score` from existing saves and seeds `lifetime_coins` to 0. Existing kids do not lose their coin balance, best streak, mastery, owned themes, or daily-goal state - only the now-unused best score number is discarded.
+
+**`beat_score` daily goal removed.** Dropped the "Beat your best score" hard-tier entry from [src/daily_goals.ts](../src/daily_goals.ts) GOAL_POOL and from [src/types/daily_goal.ts](../src/types/daily_goal.ts) GoalId union. Today's already-drawn goals containing it would never complete; tomorrow's draw skips it cleanly.
 
 ## 2026-05-17
 
 ### Additions and New Features
+
+Added five feeder-school mascot themes (Marauders, Huskies, Wildcats, Bison, Knights) to cosmetic shop. All themes placed in Rare tier at equal cost (3000 coins), following social-hierarchy design principle (no skill-gate via theme exclusivity). No school names in UI or code (mascot names only). No new art assets-pure CSS + color token additions. Theme catalog expanded from 10 to 15 themes. Visual identity via palette, geometric patterns (stripe, paw-dot cluster, diagonal claw, block bars), and dark-theme slot-border contrast fix. All themes verified: TypeScript clean, build pass, pytest 285 pass, Playwright matrix captures all 15 themes (home, wrong-8, mobile subsets), wrong-state panels render below buttons (B1 fix holds), text contrast WCAG 5.5:1 on dark themes (Marauders, Knights navy base). Visual evidence: marauders-home-desktop.png (dark red identity), wildcats-home-desktop.png (blue+gold), wildcats-wrong-8-desktop.png (readable feedback on dark blue). Micro-variants (motion/confetti tweaks) deferred to v2 per scope.
+
+Docset refresh (docset-updater skill): added `docs/INSTALL.md`, `docs/USAGE.md`, `docs/CODE_ARCHITECTURE.md`, and `docs/FILE_STRUCTURE.md` stubs grounded in repo evidence (build scripts, `tools/`, `src/`, `data/`). Centrally maintained docs (AUTHORS, MARKDOWN_STYLE, PYTHON_STYLE, REPO_STYLE) verified present and not edited. No banned docs (CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, templates) present. Required root docs (AGENTS.md, README.md, dual LICENSE files) present.
+
+Visible Home button on quiz screen: added touch-friendly "Home" button (min 44x44 px) in top-right corner (.play-corner-nav, .btn-home-quit). Button is outlined style with accent border, subtly positioned, no confirm dialog on click (drops round state). Keyboard Escape binding (bind_play_keys on_home) now has corresponding UI affordance so kids know how to return to home mid-round. Button text is ASCII-only; hover flips background to accent color with white text.
+
+Path B refinement: permanent 8-slot identity via button fill colors (removed theme-dependent btn-1..4 cycling). Implemented warm/cool color alternation (red, green, blue, magenta, orange, teal, purple, yellow-green) for perceptual slot separation across all 8 buttons. Added juicy gloss overlay and inset highlight + shadow for 3D toy-press tactile depth. On :active, buttons translateY down with reduced shadow for press feedback. Redesigned keyboard badge: white background (90% opacity) with dark text, neutral styling independent of button fill. Removed dim-sibling fog during feedback-buttons stay vivid. All 8 fills audited at 5.5:1 contrast vs white text per docs/COLOR_CONTRAST_ACCESSIBILITY.md.
+
+Results screen medal glyphs: added `.results-medal` div above trophy tier label, displaying Unicode escapes by tier (Gold: \u{1F947}, Silver: \u{1F948}, Bronze: \u{1F949}, Flawless: \u{1F3C6}). Uses textContent for ASCII-safe rendering. Home button already present in results-button-group next to Play Again + Shop.
+
+Mastery header and back button: consolidated `.mastery-header` at top of screen; includes large "Mastery" title + "X / 140 mastered" subtitle + visible `.btn-back` button top-right with on_back callback. Removed separate `.scene_mastery_overall` counter below header (now part of header).
+
+Shop equipped tile styling: shop tiles now have `.equipped` class added to card root when equipped. CSS selectors `.shop-tile.equipped` can render gold border + glow + checkmark glyph (escapes: &check;).
 
 **Docset audit pass (docset-updater skill):** Created five missing recommended docs as evidence-backed stubs with explicit "Known gaps" verification tasks: [docs/NEWS.md](NEWS.md), [docs/ROADMAP.md](ROADMAP.md), [docs/RELEASE_HISTORY.md](RELEASE_HISTORY.md), [docs/TROUBLESHOOTING.md](TROUBLESHOOTING.md), [docs/RELATED_PROJECTS.md](RELATED_PROJECTS.md). Updated [docs/GAME_USAGE.md](GAME_USAGE.md) to reflect current behavior: 5-per-day stratified daily goals with completion bonuses (was 3-per-day), 15-theme shop grouped into Starter/World/Mascot/Ultimate sections with per-theme CSS motifs and "Coins: N" pricing (was 3-tier rarity), and Wordle-style 2-column mastery trophy view (was per-stem progress description). No file deletions, no centrally-maintained docs edited, no new dependencies.
 
@@ -33,8 +96,6 @@ Changes to file structure:
 Shop container now scrolls vertically with `overflow-y: auto; max-height: 100vh; padding-bottom: 160px` to accommodate 15 themes + 4 section headings. Verified: Galaxy (last theme) is reachable at bottom on both desktop (1280x800, visible with Marauders/Space/Galaxy on-screen) and mobile (375x812, single-column layout with Space+Galaxy visible). Padding-bottom reserves space so last card isn't occluded by fixed mascot in bottom-left corner (L6 fix).
 
 Verification: `npx tsc --noEmit` clean. `bash build_github_pages.sh` pass (48.2kb main.js). `pytest tests/ -q` 285 pass. Manual testing: Shop renders with 4 section headings, 15 cards grouped correctly, Marauders shows "Coins: 7500", equipped card shows "EQUIPPED" ribbon + glow, per-theme motifs visible in preview areas (sky = light blue, underwater = dark blue, marauders = dark red + stripes, huskies = orange paw dots, wildcats = diagonal gold stripes, bison = horizontal stripes, knights = silver shield, space = white stars, galaxy = dark purple/pink gradient). Tap-to-preview working (card click switches body[data-theme] immediately). Shop scrolls to bottom on desktop and mobile, Galaxy fully visible. Screenshots: shop-scroll-bottom-desktop.png (Mascot+Ultimate sections visible, Galaxy present), shop-scroll-bottom-mobile.png (Ultimate section in single-column, Space+Galaxy reachable). No regression on home/play/results scenes (existing playwright tests pass).
-
-### Additions and New Features
 
 Expanded daily goals system from 3-per-day to 5-per-day with stratified draw, larger pool, and completion bonuses. Changes include:
 
@@ -80,6 +141,20 @@ Changes: src/scene_mastery.ts (complete rewrite with handle_share, show_stem_det
 
 Verification: `npx tsc --noEmit` clean, `bash build_github_pages.sh` pass (48.2kb), `pytest tests/ -q` 285 pass. Screenshots: sky-mastery-desktop.png (2-col grid, legend, header with chips), underwater-mastery-desktop.png (dark theme, tiles colored), sky-mastery-mobile.png (1-col, Share button visible). Tile dimensions: 22px x 22px with 40-44px touch wrap. All 20 lessons visible (desktop no-scroll, mobile scrollable).
 
+M2 Phase 1 complete: TypeScript game source (src/ + src/types/), build pipeline (build_github_pages.sh, run_web_server.sh, export_single_file.sh, tools/yaml_to_json.py), Playwright smoke harness, GitHub Pages workflow, direction chip + colored card stripes for stem/meaning pairs, theme catalog with 3 rarity tiers (Base, Rare, Epic), coins/shop/daily-goals/mastery scaffolding, ScreenState machine, daily goal progress tracking + rewards capping, streak bonuses with cycling milestones, and input key binding for fast navigation.
+
+Per-mode distractor count selector: each game mode card (Quick Run / Challenge / Endless) displays a 3-chip row (4 / 6 / 8 choices) inside the card. Tap chip to change count; selection persists per mode in save schema. Cards now render 2x2 (4 choices), 2x3 (6 choices), or 2x4 (8 choices) grids on wider screens. Keyboard input extended to 1-8 keys for choice selection.
+
+Answer feedback redesign: CHOSEN CORRECT is now white + gold outline with checkmark; CHOSEN WRONG is black + hot pink outline with X glyph. REVEALED CORRECT (correct answer shown after wrong pick) also uses white + gold. Sibling buttons dim during feedback so the chosen/revealed buttons stand out unmistakably.
+
+Replaced home-screen endless-mode checkbox with three game-mode cards (Quick Run 10 questions, Challenge 25 questions, Endless unlimited): cards have distinct per-mode accent colors, large title + tagline, drop shadow, hover scale effect, keyboard shortcuts 1/2/3 for selection. Mode selection is no longer persisted globally; last-selected mode is tracked per session to focus the card on return (last_mode_id in save schema, replacing endless_mode).
+
+Wrong-answer flow now prevents auto-advance: FEEDBACK_WRONG_MS (600ms) gates a minimum wait for shake + glow-in animations; after minimum wait, a pulsing "Tap to continue" hint appears at bottom-center. Student advances only on explicit click, Enter, or Space keypress, allowing self-paced reading of the teaching panel before moving to the next question. Correct answers continue to auto-advance after 800ms (unchanged).
+
+RoundConfig now includes choices_per_question field (defaults to 4). Save schema adds last_choices_by_mode field (Record<mode_id, count>) to persist per-mode choice count. Question builder scales confusability sampling cap from hard-coded top-6 to max(6, (count-1)*2) to support up to 8 choices with adequate candidate pool.
+
+Button feedback per "Refined Path B" architecture: three separate visual channels prevent identity-correctness confusion. (1) PERMANENT slot identity: thick left stripe (8 fixed colors per slot 1-8) + circular keyboard badge with slot number (top-left corner)-both locked across all themes. (2) THEME fill: buttons keep btn-${i%4+1} backgrounds (cycling per theme). (3) TRANSIENT correctness state: feedback is now overlay-only. Correct shows gold border glow + checkmark badge (scale-in animation); wrong shows pink border glow + X badge + shake + brief desaturation. Button fill color NEVER swaps during feedback, eliminating the prior two-greens ambiguity.
+
 ### Fixes and Maintenance
 
 Fixed two critical desktop feedback UI bugs observed on 16:10 aspect screens (1440x900, user screenshot):
@@ -89,12 +164,6 @@ Fixed two critical desktop feedback UI bugs observed on 16:10 aspect screens (14
 2. Mascot creates vertical layout gap (Bug 2): .mascot-slot was rendered as flex child in .scene_play, consuming ~120px of vertical space in the middle of the layout, pushing choice grid and teaching panel apart. Solution: changed mascot-slot from `position: relative; margin-top: 12px` to `position: fixed; bottom: 12px; left: 12px; width: 140px; height: 140px; z-index: 30`. Mascot now floats in bottom-left corner as an overlay, removing it from the document flow. Teaching panel and choices grid now sit directly adjacent without gap. Verified on sky/jungle/arcade_neon 1440x900 that layout is compact and mascot does not obscure critical UI.
 
 All changes: `npx tsc --noEmit` clean, `bash build_github_pages.sh` pass, `pytest tests/ -q` 285 pass. Screenshots: sky-wrong-1440x900.png (teaching panel readable), jungle-wrong-1440x900.png (mascot in corner, no gap), arcade_neon-wrong-1440x900.png (neon contrast preserved), sky-wrong-375x812.png (mobile layout verified, no regression).
-
-### Additions and New Features
-
-Added five feeder-school mascot themes (Marauders, Huskies, Wildcats, Bison, Knights) to cosmetic shop. All themes placed in Rare tier at equal cost (3000 coins), following social-hierarchy design principle (no skill-gate via theme exclusivity). No school names in UI or code (mascot names only). No new art assets-pure CSS + color token additions. Theme catalog expanded from 10 to 15 themes. Visual identity via palette, geometric patterns (stripe, paw-dot cluster, diagonal claw, block bars), and dark-theme slot-border contrast fix. All themes verified: TypeScript clean, build pass, pytest 285 pass, Playwright matrix captures all 15 themes (home, wrong-8, mobile subsets), wrong-state panels render below buttons (B1 fix holds), text contrast WCAG 5.5:1 on dark themes (Marauders, Knights navy base). Visual evidence: marauders-home-desktop.png (dark red identity), wildcats-home-desktop.png (blue+gold), wildcats-wrong-8-desktop.png (readable feedback on dark blue). Micro-variants (motion/confetti tweaks) deferred to v2 per scope.
-
-### Fixes and Maintenance
 
 (Theme + shop visual fixes): Fixed three critical shop and feedback bugs:
 
@@ -139,22 +208,6 @@ Verified: `npx tsc --noEmit` clean, `bash build_github_pages.sh` success, Playwr
 
 (Fix 6) No double purchase_theme call detected: audit confirms purchase_theme(theme.id) is called exactly once per Buy button click in scene_shop.ts line 124. Init.ts render_shop callback on_purchase_attempt is a no-op hook (intentional for future state updates); the purchase already happened in scene_shop. Persistence write occurs once per purchase; no redundant writes observed.
 
-### Additions and New Features
-
-Docset refresh (docset-updater skill): added `docs/INSTALL.md`, `docs/USAGE.md`, `docs/CODE_ARCHITECTURE.md`, and `docs/FILE_STRUCTURE.md` stubs grounded in repo evidence (build scripts, `tools/`, `src/`, `data/`). Centrally maintained docs (AUTHORS, MARKDOWN_STYLE, PYTHON_STYLE, REPO_STYLE) verified present and not edited. No banned docs (CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, templates) present. Required root docs (AGENTS.md, README.md, dual LICENSE files) present.
-
-Visible Home button on quiz screen: added touch-friendly "Home" button (min 44x44 px) in top-right corner (.play-corner-nav, .btn-home-quit). Button is outlined style with accent border, subtly positioned, no confirm dialog on click (drops round state). Keyboard Escape binding (bind_play_keys on_home) now has corresponding UI affordance so kids know how to return to home mid-round. Button text is ASCII-only; hover flips background to accent color with white text.
-
-Path B refinement: permanent 8-slot identity via button fill colors (removed theme-dependent btn-1..4 cycling). Implemented warm/cool color alternation (red, green, blue, magenta, orange, teal, purple, yellow-green) for perceptual slot separation across all 8 buttons. Added juicy gloss overlay and inset highlight + shadow for 3D toy-press tactile depth. On :active, buttons translateY down with reduced shadow for press feedback. Redesigned keyboard badge: white background (90% opacity) with dark text, neutral styling independent of button fill. Removed dim-sibling fog during feedback-buttons stay vivid. All 8 fills audited at 5.5:1 contrast vs white text per docs/COLOR_CONTRAST_ACCESSIBILITY.md.
-
-Results screen medal glyphs: added `.results-medal` div above trophy tier label, displaying Unicode escapes by tier (Gold: \u{1F947}, Silver: \u{1F948}, Bronze: \u{1F949}, Flawless: \u{1F3C6}). Uses textContent for ASCII-safe rendering. Home button already present in results-button-group next to Play Again + Shop.
-
-Mastery header and back button: consolidated `.mastery-header` at top of screen; includes large "Mastery" title + "X / 140 mastered" subtitle + visible `.btn-back` button top-right with on_back callback. Removed separate `.scene_mastery_overall` counter below header (now part of header).
-
-Shop equipped tile styling: shop tiles now have `.equipped` class added to card root when equipped. CSS selectors `.shop-tile.equipped` can render gold border + glow + checkmark glyph (escapes: &check;).
-
-### Fixes and Maintenance
-
 **Audit bug fixes (8 bugs from code-review findings):**
 
 1. **Bug 1 (HIGH FUNCTIONAL): Anti-grind cap semantics corrected** - Changed DAILY_GOAL_REWARD_CAP from coin total to award COUNT. Renamed field goal_rewards_granted -> goal_rewards_count_today in StatsToday; updated cap logic to increment by 1 award (not coin amount). Cap now correctly limits 15 awards/day (not 15 coins). Updated grant_goal_rewards() and check_and_grant_completion_bonuses() to respect the new cap with re-checked bounds after each award.
@@ -178,24 +231,6 @@ Verified: `npx tsc --noEmit` clean, `bash build_github_pages.sh` pass (48.8kb ma
 Code hygiene: removed dead code and XSS-shaped patterns. Replaced `innerHTML` assignment in mascot.ts with DOMParser for safer SVG injection. Removed try/catch from data_loader.ts to let fetch failures throw loudly per repo style (design philosophy: fix the design, not the symptom). Deleted unused fields: `muted` (sfx toggle never wired), `correct_in_a_row_max` (never read), and `ScreenKind` type alias (superseded by scene_* pattern). Removed dead `on_next` callback from PlayKeyHandlers (Enter/Space no-op during quiz; advancement driven by feedback state machine). Moved bandit security scan from pytest (tests/test_bandit_security.py) to E2E suite (tests/e2e/e2e_bandit_security.py) per E2E_TESTS.md conventions; bandit is a slow external tool not suitable for fast pytest lane.
 
 TTY guard in run_web_server.sh: added `[ -t 0 ]` check before `open` command so browser doesn't pop when agents invoke the script non-interactively. Fixes agent workflow blocking on unsolicited browser launches.
-
-### Behavior or Interface Changes
-
-M2 Phase 1 complete: TypeScript game source (src/ + src/types/), build pipeline (build_github_pages.sh, run_web_server.sh, export_single_file.sh, tools/yaml_to_json.py), Playwright smoke harness, GitHub Pages workflow, direction chip + colored card stripes for stem/meaning pairs, theme catalog with 3 rarity tiers (Base, Rare, Epic), coins/shop/daily-goals/mastery scaffolding, ScreenState machine, daily goal progress tracking + rewards capping, streak bonuses with cycling milestones, and input key binding for fast navigation.
-
-Per-mode distractor count selector: each game mode card (Quick Run / Challenge / Endless) displays a 3-chip row (4 / 6 / 8 choices) inside the card. Tap chip to change count; selection persists per mode in save schema. Cards now render 2x2 (4 choices), 2x3 (6 choices), or 2x4 (8 choices) grids on wider screens. Keyboard input extended to 1-8 keys for choice selection.
-
-Answer feedback redesign: CHOSEN CORRECT is now white + gold outline with checkmark; CHOSEN WRONG is black + hot pink outline with X glyph. REVEALED CORRECT (correct answer shown after wrong pick) also uses white + gold. Sibling buttons dim during feedback so the chosen/revealed buttons stand out unmistakably.
-
-Replaced home-screen endless-mode checkbox with three game-mode cards (Quick Run 10 questions, Challenge 25 questions, Endless unlimited): cards have distinct per-mode accent colors, large title + tagline, drop shadow, hover scale effect, keyboard shortcuts 1/2/3 for selection. Mode selection is no longer persisted globally; last-selected mode is tracked per session to focus the card on return (last_mode_id in save schema, replacing endless_mode).
-
-Wrong-answer flow now prevents auto-advance: FEEDBACK_WRONG_MS (600ms) gates a minimum wait for shake + glow-in animations; after minimum wait, a pulsing "Tap to continue" hint appears at bottom-center. Student advances only on explicit click, Enter, or Space keypress, allowing self-paced reading of the teaching panel before moving to the next question. Correct answers continue to auto-advance after 800ms (unchanged).
-
-RoundConfig now includes choices_per_question field (defaults to 4). Save schema adds last_choices_by_mode field (Record<mode_id, count>) to persist per-mode choice count. Question builder scales confusability sampling cap from hard-coded top-6 to max(6, (count-1)*2) to support up to 8 choices with adequate candidate pool.
-
-Button feedback per "Refined Path B" architecture: three separate visual channels prevent identity-correctness confusion. (1) PERMANENT slot identity: thick left stripe (8 fixed colors per slot 1-8) + circular keyboard badge with slot number (top-left corner)-both locked across all themes. (2) THEME fill: buttons keep btn-${i%4+1} backgrounds (cycling per theme). (3) TRANSIENT correctness state: feedback is now overlay-only. Correct shows gold border glow + checkmark badge (scale-in animation); wrong shows pink border glow + X badge + shake + brief desaturation. Button fill color NEVER swaps during feedback, eliminating the prior two-greens ambiguity.
-
-### Fixes and Maintenance
 
 Implemented subject-stem deck shuffle to eliminate stem repeats within cycles. SubjectDeck class uses Fisher-Yates shuffle per question cycle; prevents seam collisions (last K stems of previous cycle reappearing in first K of next) via bounded reshuffle retries (K = min(4, floor((pool.length - 1) / 2))).  Retry-queue resurface removes the resurfaced stem from the deck to prevent immediate re-draw. Verified: no repeats within a cycle, seam collisions minimized across 50-pick test runs from 7-stem pool.
 

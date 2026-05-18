@@ -2,7 +2,7 @@
 
 import type { Stem, Bundle } from "./types/stem";
 import type { Direction } from "./types/question";
-import { STREAK_BONUSES } from "./constants";
+import { STREAK_BANNERS } from "./constants";
 
 export const CORRECT_PRAISE: string[] = [
 	"Got it!",
@@ -87,10 +87,10 @@ export function build_teaching_panel(opts: {
 // Return the banner text for a streak milestone, or null if not a milestone.
 // Handles fixed milestones (3, 5, 10, 20, 30, 40) and every 10 thereafter via cycling.
 export function streak_banner_for(streak: number): string | null {
-	// Check fixed milestones from STREAK_BONUSES
-	for (const bonus of STREAK_BONUSES) {
-		if (streak === bonus.at) {
-			return bonus.banner;
+	// Check fixed milestones from STREAK_BANNERS
+	for (const milestone of STREAK_BANNERS) {
+		if (streak === milestone.at) {
+			return milestone.banner;
 		}
 	}
 

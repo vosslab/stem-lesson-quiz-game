@@ -14,7 +14,12 @@ export function start_round(
 	config: RoundConfig
 ): RoundState {
 	const round = build_round_state(config);
-	round.retry_queue = new RetryQueue();
+
+	// Mode gate: Quick Run (enable_retry=false) keeps retry_queue null to avoid
+	// in-round duplicates. Challenge/Endless instantiate the real queue.
+	if (config.enable_retry) {
+		round.retry_queue = new RetryQueue();
+	}
 
 	// Build the initial pool for the deck
 	const selected_stems = bundle.all_stems.filter((stem) => {
@@ -34,9 +39,11 @@ export function next_question(
 	bundle: Bundle,
 	round: RoundState
 ): Question {
-	// Use retry queue and subject deck from round state
+	// Use retry queue (when enabled) and subject deck from round state.
 	const question = pick_next_question(bundle, round.config, round.retry_queue, round.subject_deck);
-	round.retry_queue.increment_questions();
+	if (round.retry_queue) {
+		round.retry_queue.increment_questions();
+	}
 	return question;
 }
 
@@ -49,14 +56,14 @@ export function answer(
 ): AnswerResult {
 	const correct = chosen === question.correct_choice;
 
-	let points_awarded = 0;
-
 	if (correct) {
-		const scoring_result = apply_correct(round);
-		points_awarded = scoring_result.points;
+		apply_correct(round);
 	} else {
 		apply_wrong(round);
-		round.retry_queue.push_missed(question.source_stem);
+		// Mode-gated: push missed stem only when retry queue is active.
+		if (round.retry_queue) {
+			round.retry_queue.push_missed(question.source_stem);
+		}
 	}
 
 	round.questions_asked += 1;
@@ -65,8 +72,6 @@ export function answer(
 		question,
 		chosen,
 		correct,
-		points_awarded,
-		streak_after: round.current_streak,
 	};
 
 	round.answers.push(answer_result);

@@ -16,11 +16,10 @@ export function build_round_state(config: RoundConfig): RoundState {
 		wrong_count: 0,
 		current_streak: 0,
 		longest_streak: 0,
-		score: 0,
 		coins_earned: 0,
 		answers: [],
-		// Placeholders; start_round will assign real instances
-		retry_queue: new RetryQueue(),
+		// Placeholders; start_round will assign real instances (retry_queue may stay null per mode)
+		retry_queue: null,
 		subject_deck: new SubjectDeck([]),
 	};
 }
@@ -54,7 +53,7 @@ export class RetryQueue {
 		// invariant: stem was added to queue in push_missed, so it must be in questions_since_miss
 		const questions_passed = this.questions_since_miss.get(stem.id)!;
 
-		// Check if enough questions have passed (3-5 randomly)
+		// Check if enough questions have passed (10-20 randomly, mode-gated)
 		const min = RETRY_QUEUE_RESURFACE_MIN;
 		const max = RETRY_QUEUE_RESURFACE_MAX;
 		const resurface_threshold = min + Math.floor(Math.random() * (max - min + 1));
@@ -149,6 +148,8 @@ export class SubjectDeck {
 	}
 
 	remove_from_remaining(stem_id: string): void {
+		// Used when a stem resurfaces from the retry queue: drop it from the deck
+		// to prevent it from being drawn again later in the same cycle.
 		this.remaining = this.remaining.filter((s) => s.id !== stem_id);
 	}
 }
@@ -158,7 +159,7 @@ export class SubjectDeck {
 export function pick_next_question(
 	bundle: Bundle,
 	config: RoundConfig,
-	retry_queue: RetryQueue,
+	retry_queue: RetryQueue | null,
 	subject_deck: SubjectDeck
 ): Question {
 	// Build the filtered pool (stems matching selected lessons, fallback to all stems)
@@ -169,15 +170,16 @@ export function pick_next_question(
 	});
 	const pool = selected_stems.length > 0 ? selected_stems : bundle.all_stems;
 
-	// Try to resurface from retry queue
-	const resurface_stem = retry_queue.should_resurface();
+	// Mode gate: only try retry-queue resurface when enabled (Challenge/Endless).
+	// Quick Run passes null retry_queue, so the deck draw is the only path.
+	const resurface_stem = retry_queue ? retry_queue.should_resurface() : null;
 	let selected_stem = resurface_stem;
 
 	if (!selected_stem) {
 		// Draw from deck
 		selected_stem = subject_deck.draw(pool);
 	} else {
-		// If resurfacing from retry queue, remove it from the deck to avoid re-drawing
+		// Resurfacing: remove the stem from the deck so it isn't drawn again later.
 		subject_deck.remove_from_remaining(selected_stem.id);
 	}
 

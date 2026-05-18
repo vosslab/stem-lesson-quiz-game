@@ -1,11 +1,11 @@
-// Results screen: trophy, score, accuracy, streak, coins, buttons.
+// Results screen: trophy, accuracy, streak, coins, lifetime coins, buttons.
 
 import type { RoundState } from "./types/question";
 
 export interface ResultsScreenOptions {
 	round: RoundState;
 	coins_earned: number;
-	new_best_score: boolean;
+	lifetime_coins: number;
 	new_best_streak: boolean;
 	on_play_again: () => void;
 	on_open_shop: () => void;
@@ -42,7 +42,7 @@ export function render_results_screen(opts: ResultsScreenOptions): HTMLElement {
 	const {
 		round,
 		coins_earned,
-		new_best_score,
+		lifetime_coins,
 		new_best_streak,
 		on_play_again,
 		on_open_shop,
@@ -72,30 +72,6 @@ export function render_results_screen(opts: ResultsScreenOptions): HTMLElement {
 	trophy_label.textContent = tier_info.tier;
 
 	trophy_section.appendChild(trophy_label);
-
-	// Score display
-	const score_section = document.createElement("div");
-	score_section.className = "results-stat";
-
-	const score_label = document.createElement("div");
-	score_label.className = "results-label";
-	score_label.textContent = "Score";
-
-	const score_value = document.createElement("div");
-	score_value.className = "results-value";
-	score_value.textContent = String(round.score);
-
-	const score_badge = document.createElement("div");
-	score_badge.className = "results-badge";
-	if (new_best_score) {
-		score_badge.textContent = "NEW BEST!";
-	}
-
-	score_section.appendChild(score_label);
-	score_section.appendChild(score_value);
-	if (new_best_score) {
-		score_section.appendChild(score_badge);
-	}
 
 	// Accuracy display
 	const accuracy_section = document.createElement("div");
@@ -136,13 +112,13 @@ export function render_results_screen(opts: ResultsScreenOptions): HTMLElement {
 		streak_section.appendChild(streak_badge);
 	}
 
-	// Coins earned display
+	// Coins earned this round
 	const coins_section = document.createElement("div");
 	coins_section.className = "results-stat";
 
 	const coins_label = document.createElement("div");
 	coins_label.className = "results-label";
-	coins_label.textContent = "Coins Earned";
+	coins_label.textContent = "Coins This Round";
 
 	const coins_value = document.createElement("div");
 	coins_value.className = "results-value";
@@ -150,6 +126,21 @@ export function render_results_screen(opts: ResultsScreenOptions): HTMLElement {
 
 	coins_section.appendChild(coins_label);
 	coins_section.appendChild(coins_value);
+
+	// Lifetime coins earned (cumulative; never decreases on spend).
+	const lifetime_section = document.createElement("div");
+	lifetime_section.className = "results-stat";
+
+	const lifetime_label = document.createElement("div");
+	lifetime_label.className = "results-label";
+	lifetime_label.textContent = "Lifetime Coins";
+
+	const lifetime_value = document.createElement("div");
+	lifetime_value.className = "results-value";
+	lifetime_value.textContent = String(lifetime_coins);
+
+	lifetime_section.appendChild(lifetime_label);
+	lifetime_section.appendChild(lifetime_value);
 
 	// Action buttons: Play Again, Shop, Home
 	const button_group = document.createElement("div");
@@ -176,10 +167,10 @@ export function render_results_screen(opts: ResultsScreenOptions): HTMLElement {
 
 	// Assemble
 	container.appendChild(trophy_section);
-	container.appendChild(score_section);
 	container.appendChild(accuracy_section);
 	container.appendChild(streak_section);
 	container.appendChild(coins_section);
+	container.appendChild(lifetime_section);
 	container.appendChild(button_group);
 
 	return container;

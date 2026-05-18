@@ -1,35 +1,20 @@
-// Scoring logic: apply points for correct/wrong answers, track streaks, award bonuses.
+// Streak tracking for the active round.
+// Score system removed; coins are the only reward (see src/coins.ts).
+// This module only mutates streak/correct/wrong counters on the RoundState.
 
 import type { RoundState } from "./types/question";
-import { POINTS_CORRECT, STREAK_BONUSES } from "./constants";
 
 //============================================
 
-export function apply_correct(
-	round: RoundState
-): { points: number } {
+export function apply_correct(round: RoundState): void {
 	// Increment correct and streak counters
 	round.correct_count += 1;
 	round.current_streak += 1;
 
-	// Track longest streak
+	// Track longest streak for end-of-round display and best_streak persistence
 	if (round.current_streak > round.longest_streak) {
 		round.longest_streak = round.current_streak;
 	}
-
-	// Base points
-	let total_points = POINTS_CORRECT;
-
-	// Check for streak bonuses (ordered by threshold)
-	for (const bonus of STREAK_BONUSES) {
-		if (round.current_streak === bonus.at) {
-			total_points += bonus.bonus;
-			break;
-		}
-	}
-
-	round.score += total_points;
-	return { points: total_points };
 }
 
 //============================================
