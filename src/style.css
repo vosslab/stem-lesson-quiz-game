@@ -268,8 +268,7 @@ body[data-theme="galaxy"] {
 }
 
 html, body {
-	height: 100%;
-	overflow: hidden;
+	min-height: 100%;
 }
 
 body {
@@ -315,6 +314,7 @@ body {
 	flex-direction: column;
 	gap: 24px;
 	align-items: center;
+	padding-bottom: 160px;
 }
 
 .home-header {
@@ -1344,6 +1344,7 @@ body {
 	flex-direction: column;
 	gap: 24px;
 	align-items: center;
+	padding-bottom: 160px;
 }
 
 .trophy-section {
@@ -1452,8 +1453,6 @@ body {
 	display: flex;
 	flex-direction: column;
 	gap: 20px;
-	overflow-y: auto;
-	max-height: 100vh;
 	padding-bottom: 160px;
 }
 
@@ -1828,6 +1827,7 @@ body {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
+	padding-bottom: 160px;
 }
 
 .scene_goals_header {
@@ -2020,6 +2020,7 @@ body {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
+	padding-bottom: 160px;
 }
 
 /* Header banner: sticky, theme-colored background */

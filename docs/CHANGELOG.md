@@ -1,3 +1,9 @@
+## 2026-05-18
+
+### Fixes and Maintenance
+
+**Global scroll restored on all scenes.** Root cause: `html, body { height: 100%; overflow: hidden }` in [src/style.css](../src/style.css) killed window scroll project-wide. Only `.scene_shop` opted back in via inner `overflow-y: auto; max-height: 100vh`. Result: home, goals, mastery, and results scenes could not scroll past viewport bottom; mascot (fixed bottom-left, 140px) hid lower buttons. Fix is architectural per "fix the design, not the symptom": replaced `html, body { height: 100%; overflow: hidden }` with `min-height: 100%`, removed the band-aid `overflow-y: auto; max-height: 100vh` from `.scene_shop`, and added `padding-bottom: 160px` to `.scene_home`, `.scene_goals`, `.scene_mastery`, `.scene_results` so trailing content clears the fixed mascot. `.scene_shop` already had this padding. Build green (`build_github_pages.sh` pass, 48.8kb main.js, tsc clean).
+
 ## 2026-05-17
 
 ### Additions and New Features
