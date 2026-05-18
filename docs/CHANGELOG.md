@@ -6,6 +6,8 @@
 
 ### Fixes and Maintenance
 
+**GitHub Pages CI unblocked: dropped cachebust entirely.** [build_github_pages.sh](../build_github_pages.sh) used `md5 -q` (BSD/macOS only) to fingerprint `dist/main.js` + `dist/style.css` into a `?v=HASH` query string, so the Ubuntu runner failed at the **Build GitHub Pages dist** step under `set -euo pipefail`. Last three Deploy Pages runs (commits 7d5ab98, 03985e6, 167fb74) all aborted there; local builds passed because macOS has `md5`. Removed the cachebust block + `sed` step entirely; `dist/index.html` is now a plain `cp` of `src/index.html`. GitHub Pages already serves with ETag/Last-Modified, so a hard refresh (Cmd+Shift+R) handles stale-bundle cases; not worth a cross-platform hashing dance. Verified locally: `bash build_github_pages.sh` succeeds.
+
 **Smoke test server: strip query string before file lookup.** Hand-rolled `_server.mjs` in [tests/playwright/_server.mjs](../tests/playwright/_server.mjs) used `req.url` verbatim for file path resolution. After today's cachebust shipped, browser requests `main.js?v=HASH` and `style.css?v=HASH` resolved to literal filenames including the query string, returning 404. Headless smoke tests started hanging at "Loading stems...". Fix: strip `?...` from request URL before `fs.readFile`. Real `http-server` (used in production) already handles this; only the smoke helper was naive. Also relaxed [tests/playwright/test_load_smoke.mjs](../tests/playwright/test_load_smoke.mjs) to use `waitForFunction` polling on `#app` text instead of an immediate read after the `load` event, eliminating an unrelated async-bundle race.
 
 ### Additions and New Features
