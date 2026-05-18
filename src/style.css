@@ -1,0 +1,196 @@
+/* Theme tokens. Each theme overrides --bg-a, --bg-b, --accent, --text, --btn-1..4.
+   Theme switch is one body[data-theme="..."] attribute change; no JS branching. */
+
+:root {
+	--font-rounded: "Fredoka", "Nunito", "Avenir Next Rounded", system-ui, -apple-system, sans-serif;
+	--radius-button: 18px;
+	--radius-card: 22px;
+	--shadow-card: 0 6px 0 rgba(0, 0, 0, 0.15), 0 10px 30px rgba(0, 0, 0, 0.18);
+	--shadow-button: 0 4px 0 rgba(0, 0, 0, 0.2);
+	--ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+	--transition-fast: 120ms var(--ease-bounce);
+	--transition-mid: 240ms var(--ease-bounce);
+}
+
+/* Default: sky theme */
+body[data-theme="sky"] {
+	--bg-a: #7fd1ff;
+	--bg-b: #bfe9c8;
+	--accent: #ff6f91;
+	--text: #1c2a3a;
+	--text-soft: #43586f;
+	--card: #ffffff;
+	--btn-1: #ff6b6b;
+	--btn-2: #ffd166;
+	--btn-3: #06d6a0;
+	--btn-4: #9b5de5;
+}
+
+body[data-theme="jungle"] {
+	--bg-a: #2d6a4f;
+	--bg-b: #b7e4c7;
+	--accent: #f4a261;
+	--text: #1b3a2a;
+	--text-soft: #3f5e4d;
+	--card: #f1faee;
+	--btn-1: #e76f51;
+	--btn-2: #f4a261;
+	--btn-3: #2a9d8f;
+	--btn-4: #6a994e;
+}
+
+body[data-theme="slime_world"] {
+	--bg-a: #80ed99;
+	--bg-b: #c1fba4;
+	--accent: #ff006e;
+	--text: #1d3557;
+	--text-soft: #4a6178;
+	--card: #f1fff4;
+	--btn-1: #ff006e;
+	--btn-2: #ffbe0b;
+	--btn-3: #3a86ff;
+	--btn-4: #8338ec;
+}
+
+body[data-theme="candy_kingdom"] {
+	--bg-a: #ffb3c6;
+	--bg-b: #ffd6e0;
+	--accent: #ff5da2;
+	--text: #5c2751;
+	--text-soft: #834c75;
+	--card: #fff5f9;
+	--btn-1: #ff5da2;
+	--btn-2: #ffd166;
+	--btn-3: #06d6a0;
+	--btn-4: #a06cd5;
+}
+
+body[data-theme="underwater"] {
+	--bg-a: #023e8a;
+	--bg-b: #48cae4;
+	--accent: #ffd166;
+	--text: #ffffff;
+	--text-soft: #cfe7f5;
+	--card: #0a548a;
+	--btn-1: #ffb703;
+	--btn-2: #fb8500;
+	--btn-3: #06d6a0;
+	--btn-4: #ef476f;
+}
+
+body[data-theme="arcade_neon"] {
+	--bg-a: #0d0221;
+	--bg-b: #2a0944;
+	--accent: #f706cf;
+	--text: #f4f4f4;
+	--text-soft: #cfcfff;
+	--card: #1b0a3a;
+	--btn-1: #ff14a0;
+	--btn-2: #ffd60a;
+	--btn-3: #00f5d4;
+	--btn-4: #7b2cbf;
+}
+
+body[data-theme="ancient_ruins"] {
+	--bg-a: #c9a66b;
+	--bg-b: #e6cea8;
+	--accent: #6b4226;
+	--text: #2d1c0f;
+	--text-soft: #5e4630;
+	--card: #f6ecd9;
+	--btn-1: #b56a3a;
+	--btn-2: #d4a373;
+	--btn-3: #6b8e23;
+	--btn-4: #8b5e3c;
+}
+
+body[data-theme="lava"] {
+	--bg-a: #6a040f;
+	--bg-b: #f48c06;
+	--accent: #ffba08;
+	--text: #fff7e6;
+	--text-soft: #ffd29b;
+	--card: #9d0208;
+	--btn-1: #ffba08;
+	--btn-2: #faa307;
+	--btn-3: #dc2f02;
+	--btn-4: #e85d04;
+}
+
+body[data-theme="space"] {
+	--bg-a: #0b132b;
+	--bg-b: #1c2541;
+	--accent: #5bc0be;
+	--text: #ffffff;
+	--text-soft: #c2c8e8;
+	--card: #1c2541;
+	--btn-1: #ef476f;
+	--btn-2: #ffd166;
+	--btn-3: #06d6a0;
+	--btn-4: #5bc0be;
+}
+
+body[data-theme="galaxy"] {
+	--bg-a: #2e0249;
+	--bg-b: #a91079;
+	--accent: #fffd82;
+	--text: #ffffff;
+	--text-soft: #ffd6f0;
+	--card: #3a015c;
+	--btn-1: #ff61a6;
+	--btn-2: #fffd82;
+	--btn-3: #57e3fb;
+	--btn-4: #c061ff;
+}
+
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+html, body {
+	height: 100%;
+	overflow: hidden;
+}
+
+body {
+	font-family: var(--font-rounded);
+	color: var(--text);
+	background: linear-gradient(135deg, var(--bg-a), var(--bg-b));
+	background-attachment: fixed;
+	min-height: 100vh;
+	-webkit-font-smoothing: antialiased;
+	transition: background 400ms ease;
+}
+
+#app {
+	position: relative;
+	width: 100%;
+	min-height: 100vh;
+	padding: 24px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 16px;
+}
+
+#loading {
+	margin-top: 40vh;
+	font-size: 24px;
+	color: var(--text-soft);
+}
+
+#confetti-canvas {
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: 100;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		transition: none !important;
+		animation: none !important;
+	}
+}

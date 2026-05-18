@@ -1,0 +1,33 @@
+lesson: 1
+stems:
+- stem: aliga
+  meaning: pain
+  example_word: cephalgia
+  example_definition: headache; throbbing head pain
+- stem: ase
+  meaning: enzyme
+  example_word: phosphatase
+  example_definition: an enzyme that catalyzes the breakdown of organic phosphates
+    (salt)
+- stem: carn
+  meaning: flesh
+  example_word: carnivore
+  example_definition: an animal that feeds on flesh
+- stem: gastro
+  meaning: stomach
+  example_word: gastrology
+  example_definition: the study of the functions of the stomach
+- stem: hema
+  meaning: blood
+  example_word: hemorrhage
+  example_definition: a discharge of blood; bleeding; a ruptured blood vessel
+- stem: hydro
+  meaning: water
+  example_word: hydroplane
+  example_definition: an attachment added to an airplane enabling it to glide on the
+    water; a seaplane
+- stem: itis
+  meaning: inflammation
+  example_word: brochchitis
+  example_definition: chronic inflammation of the membrane outlining the bronchial
+    tubes caused by respiratory infection

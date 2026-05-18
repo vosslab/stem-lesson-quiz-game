@@ -1,0 +1,643 @@
+lessons:
+- lesson: 1
+  stems:
+  - stem: aliga
+    meaning: pain
+    example_word: cephalgia
+    example_definition: headache; throbbing head pain
+  - stem: ase
+    meaning: enzyme
+    example_word: phosphatase
+    example_definition: an enzyme that catalyzes the breakdown of organic phosphates
+      (salt)
+  - stem: carn
+    meaning: flesh
+    example_word: carnivore
+    example_definition: an animal that feeds on flesh
+  - stem: gastro
+    meaning: stomach
+    example_word: gastrology
+    example_definition: the study of the functions of the stomach
+  - stem: hema
+    meaning: blood
+    example_word: hemorrhage
+    example_definition: a discharge of blood; bleeding; a ruptured blood vessel
+  - stem: hydro
+    meaning: water
+    example_word: hydroplane
+    example_definition: an attachment added to an airplane enabling it to glide on
+      the water; a seaplane
+  - stem: itis
+    meaning: inflammation
+    example_word: brochchitis
+    example_definition: chronic inflammation of the membrane outlining the bronchial
+      tubes caused by respiratory infection
+- lesson: 2
+  stems:
+  - stem: spir
+    meaning: breathe
+    example_word: respiratory
+    example_definition: relating to the organs of respiration or breathing
+  - stem: ventr
+    meaning: belly
+    example_word: ventral
+    example_definition: near the underside of an animal
+  - stem: myo
+    meaning: muscle
+    example_word: myoid
+    example_definition: resembles muscles or is made up of muscle
+  - stem: ocul
+    meaning: eye
+    example_word: binoculars
+    example_definition: an optical instrument to use with both eyes with two small
+      telescopes
+  - stem: pneumo
+    meaning: lung
+    example_word: pneumonia
+    example_definition: a serious illness when both lungs become red, swollen and
+      filled with fluid
+  - stem: digit
+    meaning: finger
+    example_word: indigitate
+    example_definition: an attachment added to an airplane enabling it to glide on
+      the water; a seaplane
+  - stem: cad
+    meaning: fall
+    example_word: cadaver
+    example_definition: chronic inflammation of the membrane outlining the bronchial
+      tubes caused by respiratory infection
+- lesson: 3
+  stems:
+  - stem: medi
+    meaning: middle
+    example_word: median
+    example_definition: situated in the middle; relating to the point midpoint
+  - stem: morph
+    meaning: shape
+    example_word: metamorphosis
+    example_definition: the process of an immature to a mature state
+  - stem: exo
+    meaning: out
+    example_word: exodus
+    example_definition: resembles muscles or is made up of muscle
+  - stem: hypo
+    meaning: under
+    example_word: hypoglycemia
+    example_definition: a condition where the body's blood sugar drops below normal
+  - stem: intra
+    meaning: within
+    example_word: intrastate
+    example_definition: existing or occurring within a state
+  - stem: lat
+    meaning: side
+    example_word: bilateral
+    example_definition: involving or affecting both sides
+  - stem: rhodo
+    meaning: rose
+    example_word: rhododendron
+    example_definition: a shrub or small tree with bell shaped flowers
+- lesson: 4
+  stems:
+  - stem: zo
+    meaning: animal
+    example_word: zoology
+    example_definition: the study of the behavior and classification of animals
+  - stem: opia
+    meaning: sight
+    example_word: diplopia
+    example_definition: a condition where a person sees two images of a single object
+  - stem: dors
+    meaning: back
+    example_word: dorsal
+    example_definition: situated near or on the back of an animal
+  - stem: corp
+    meaning: body
+    example_word: corpulent
+    example_definition: having a large, bulky body
+  - stem: apt
+    meaning: fit
+    example_word: adapt
+    example_definition: to make fit by modification
+  - stem: hippo
+    meaning: horse
+    example_word: hippogriff
+    example_definition: a legendary animal that has the foreparts of a griffin and
+      the body of a horse
+  - stem: leuko
+    meaning: white
+    example_word: leukocyte
+    example_definition: colorless blood cells of the immune system
+- lesson: 5
+  stems:
+  - stem: sapro
+    meaning: rotten
+    example_word: saprophyte
+    example_definition: a plant that feeds on decomposing plant matter
+  - stem: viv
+    meaning: life
+    example_word: survivor
+    example_definition: to remain alive or in existence
+  - stem: magna
+    meaning: great
+    example_word: magnification
+    example_definition: the enlargement of an object
+  - stem: nat
+    meaning: born
+    example_word: nationality
+    example_definition: people with a common
+  - stem: phyt
+    meaning: plant
+    example_word: hydrophyte
+    example_definition: to make fit by modification origin, language and culture
+  - stem: chrom
+    meaning: color
+    example_word: monochrome
+    example_definition: a painting, photo or a drawing in a single hue or color
+  - stem: nesia
+    meaning: island
+    example_word: Polynesia
+    example_definition: the islands of the southern and Pacific
+- lesson: 6
+  stems:
+  - stem: dys
+    meaning: bad
+    example_word: dystopian
+    example_definition: being an imagined world or society in which people lead dehumanized,
+      fearful lives
+  - stem: emia
+    meaning: blood
+    example_word: anemia
+    example_definition: a condition in which the blood is deficient in red blood cells,
+      in hemoglobin, or in total volume
+  - stem: fic
+    meaning: make
+    example_word: difficult
+    example_definition: hard to do or make
+  - stem: idio
+    meaning: peculiar
+    example_word: idiolect
+    example_definition: language or speech pattern of one individual at a particular
+      period of life
+  - stem: ab
+    meaning: away
+    example_word: absent
+    example_definition: not present or existing
+  - stem: cephalo
+    meaning: head
+    example_word: cephalopod
+    example_definition: a class of marine mollusks including the squids, and octopuses
+      that move by expelling water from a tubular siphon under the head
+  - stem: derm
+    meaning: skin
+    example_word: taxidermy
+    example_definition: the art of preparing, stuffing, and mounting the skins of
+      animals
+- lesson: 7
+  stems:
+  - stem: cyclo
+    meaning: circle
+    example_word: recycle
+    example_definition: to make ready for resuse
+  - stem: err
+    meaning: wander
+    example_word: errand
+    example_definition: a short trip taken to attend to some business often for another
+  - stem: glyc
+    meaning: sweet
+    example_word: glucose
+    example_definition: the sweet colorless form that occurs in nature and is the
+      usual form in which carbohydrate is taken in
+  - stem: tox
+    meaning: poison
+    example_word: toxin
+    example_definition: a poisonous substance that is a product of the metabolic activities
+      of a living organism
+  - stem: mela
+    meaning: black
+    example_word: melancholy
+    example_definition: tending to cause sadness or depression of mind
+  - stem: neuro
+    meaning: nerve
+    example_word: neuron
+    example_definition: a grayish or reddish granular cell that is the functional
+      unit of nervous tissue transmitting and receiving nerve impulses
+  - stem: rhiz
+    meaning: root
+    example_word: rhizoid
+    example_definition: a rootlike structure
+- lesson: 8
+  stems:
+  - stem: man
+    meaning: hand
+    example_word: manicure
+    example_definition: a treatment for the care of the hands and fingernails
+  - stem: ose
+    meaning: sugar
+    example_word: sucrose
+    example_definition: a sweet crystalline sugar that occurs naturally in most plants
+  - stem: scope
+    meaning: look
+    example_word: telescope
+    example_definition: tubular optical instrument for viewing distant objects by
+      means of the refraction of light rays
+  - stem: vore
+    meaning: eating
+    example_word: herivore
+    example_definition: an animal that eats mostly plants for energy
+  - stem: ecto
+    meaning: outer
+    example_word: ectoderm
+    example_definition: the outermost layer of the 3 germ layers
+  - stem: bio
+    meaning: life
+    example_word: biosphere
+    example_definition: the part of the earth that supports life including living
+      organisms
+  - stem: an
+    meaning: without
+    example_word: anonymous
+    example_definition: lacking a name or identity of unknown origin
+- lesson: 9
+  stems:
+  - stem: cor
+    meaning: heart
+    example_word: cordial
+    example_definition: a friendly greeting
+  - stem: migr
+    meaning: wander
+    example_word: immigrant
+    example_definition: a person who comes to live permanently in a foreign country.
+  - stem: photo
+    meaning: light
+    example_word: photosynthesis
+    example_definition: the process by which green plants and some other organisms
+      use sunlight to make foods from carbon dioxide and water
+  - stem: vest
+    meaning: clothes
+    example_word: vestment
+    example_definition: a robe worn by clergy
+  - stem: lys
+    meaning: breakdown
+    example_word: analysis
+    example_definition: detailed examination of the structure of something
+  - stem: und
+    meaning: wave
+    example_word: inundation
+    example_definition: an overwhelming abundance of people or things
+  - stem: nav
+    meaning: ship
+    example_word: navigation
+    example_definition: the passage of ships
+- lesson: 10
+  stems:
+  - stem: aer
+    meaning: air
+    example_word: aerospace
+    example_definition: design and manufacturer of aircraft and rockets that operate
+      in aerospace
+  - stem: cle
+    meaning: small
+    example_word: particle
+    example_definition: a piece, fragment or tiny bit;
+  - stem: ish
+    meaning: like
+    example_word: stylish
+    example_definition: fashionable elegant and sophisticated
+  - stem: fort
+    meaning: strong
+    example_word: fortress
+    example_definition: a large, permanent stronghold, or place of survival
+  - stem: gest
+    meaning: carry
+    example_word: gesture
+    example_definition: the use of motions of the limbs or body as a means of expression
+  - stem: alb
+    meaning: white
+    example_word: albino
+    example_definition: a human being who is congenitally deficient in pigment and
+      usually has mikly skin, or colorless hair,
+  - stem: baro
+    meaning: pressure
+    example_word: barometer
+    example_definition: an instrument for determining the pressure of the atmosphere
+      and assists in forecasting weather
+- lesson: 11
+  stems:
+  - stem: cyan
+    meaning: blue
+    example_word: cyanobacteria
+    example_definition: aquatic and photosynthetic bacteria that lives in the water,
+      and can manufacture their own food.
+  - stem: mar
+    meaning: sea
+    example_word: maritime
+    example_definition: navigation on the sea
+  - stem: ness
+    meaning: quality
+    example_word: darkness
+    example_definition: total or near total absence of light
+  - stem: vac
+    meaning: empty
+    example_word: vacant
+    example_definition: free from activity or work
+  - stem: endo
+    meaning: within
+    example_word: endoplasm
+    example_definition: inner relatively fluid part of the cytoplasm
+  - stem: less
+    meaning: without
+    example_word: tireless
+    example_definition: incapable of tiring
+  - stem: cise
+    meaning: cut
+    example_word: concise
+    example_definition: free from all elaboration and superfluous detail
+- lesson: 12
+  stems:
+  - stem: mel
+    meaning: song
+    example_word: melody
+    example_definition: a sweet or agreeable arrangement of sounds
+  - stem: punct
+    meaning: point
+    example_word: punctuation
+    example_definition: practice of inserting standardized marks to clarify the meaning
+  - stem: vita
+    meaning: life
+    example_word: vital
+    example_definition: very important
+  - stem: tact
+    meaning: touch
+    example_word: tactile
+    example_definition: relating to, or being the sense of touch
+  - stem: patho
+    meaning: disease
+    example_word: pathology
+    example_definition: the study of the nature of diseases and the functional changes
+      produced by them
+  - stem: mob
+    meaning: move
+    example_word: mobility
+    example_definition: the state of being movable
+  - stem: arthro
+    meaning: joint
+    example_word: arthritis
+    example_definition: inflammation of joints due to infectious, causes
+- lesson: 13
+  stems:
+  - stem: dendr
+    meaning: tree
+    example_word: philodendron
+    example_definition: any of various aroid plants that are cultivated for their
+      showy foliage
+  - stem: foli
+    meaning: leaf
+    example_word: foliage
+    example_definition: a cluster of leaves, flowers, and branches
+  - stem: il
+    meaning: not
+    example_word: illegible
+    example_definition: not legible
+  - stem: hibern
+    meaning: winter
+    example_word: hibernate
+    example_definition: to be or become inactive or dormant
+  - stem: micro
+    meaning: small
+    example_word: microchip
+    example_definition: a tiny wafer of semiconducting material used to make a circuit
+  - stem: ornith
+    meaning: bird
+    example_word: ornithology
+    example_definition: a branch of zoology that deals with birds
+  - stem: pter
+    meaning: wing
+    example_word: pterodactyl
+    example_definition: a pterosaur of the late Jurassic period with a long slender
+      head and neck with a short tail
+- lesson: 14
+  stems:
+  - stem: taxis
+    meaning: arrangement
+    example_word: phyllotaxy
+    example_definition: the arrangement of leaves on a stem
+  - stem: bell
+    meaning: war
+    example_word: rebellion
+    example_definition: the act of open resistance to an established government
+  - stem: curr
+    meaning: run
+    example_word: current
+    example_definition: belonging to the present time; a body of water or air moving
+      in a definite direction
+  - stem: caco
+    meaning: bad
+    example_word: cacophony
+    example_definition: harshness in the sounds of words
+  - stem: thermo
+    meaning: heat
+    example_word: thermometer
+    example_definition: an instrument for measuring temperature
+  - stem: xylo
+    meaning: wood
+    example_word: xylophone
+    example_definition: a musical instrument played by striking wood bars with a small
+      wooden mallet
+  - stem: meta
+    meaning: change
+    example_word: metamorphosis
+    example_definition: change of physical form, structure, or substance
+- lesson: 15
+  stems:
+  - stem: oma
+    meaning: tumor
+    example_word: melanoma
+    example_definition: a type of skin cancer with a tumor with a dark pigment
+  - stem: pseudo
+    meaning: 'false'
+    example_word: pseudoscience
+    example_definition: a system of theories, assumptions, and methods erroneously
+      regarded as scientific
+  - stem: germ
+    meaning: vital/related
+    example_word: germinate
+    example_definition: to cause to sprout or develop
+  - stem: ept
+    meaning: 'on'
+    example_word: epidermis
+    example_definition: the outer layer of the skin of a vertebrate that overlies
+      the skin;
+  - stem: fus
+    meaning: pour
+    example_word: infuse
+    example_definition: to cause to be permeated (spread) with something that alters
+      usually for the better
+  - stem: miss
+    meaning: send
+    example_word: missile
+    example_definition: capable of being thrown or projected to strike a distant object
+  - stem: osteoarthritis
+    meaning: a form of arthritis that is characterized by progressive degenerative
+      changes in the cartilage of one or more joints (as of the knees, hips, and hands)
+    example_word: osteo
+    example_definition: bone
+- lesson: 16
+  stems:
+  - stem: tude
+    meaning: state of
+    example_word: solitude
+    example_definition: the quality or state of being alone or remote from society
+  - stem: blasto
+    meaning: embryo
+    example_word: blastoderm
+    example_definition: the layer of embryonic tissue that forms prior to the development
+      of the embryonic axis.
+  - stem: amphi
+    meaning: both
+    example_word: amphibian
+    example_definition: a cold blooded vertebrate animal that includes frogs, toads
+      and salamanders
+  - stem: chlor
+    meaning: green
+    example_word: chloroplast
+    example_definition: in green plant cells, a plastid that contains chlorophyll
+      in which photosynthesis takes place
+  - stem: somn
+    meaning: sleep
+    example_word: somnolent
+    example_definition: heavy with sleep; drowsy
+  - stem: muta
+    meaning: change
+    example_word: mutate
+    example_definition: change or cause to change in form or nature.
+  - stem: ous
+    meaning: full of
+    example_word: zealous
+    example_definition: showing great energy or enthusiasm
+- lesson: 17
+  stems:
+  - stem: platy
+    meaning: flat
+    example_word: platypus
+    example_definition: a small aquatic mammal with webbed feet, a bill like a duck,
+      dense fur and flat feet found in lakes in Australia
+  - stem: ichthy
+    meaning: fish
+    example_word: ichthyology
+    example_definition: a branch of zoology that deals with fish
+  - stem: homo
+    meaning: same
+    example_word: homophone
+    example_definition: one of two or more words pronounced alike but different in
+      meaning
+  - stem: nuc
+    meaning: center
+    example_word: nucleus
+    example_definition: the positively charged central portion of an atom
+  - stem: pop
+    meaning: people
+    example_word: population
+    example_definition: the total of people occupying an area or making up a whole
+  - stem: spor
+    meaning: seed
+    example_word: spore
+    example_definition: a small, one-celled reproductive unit produced by plants,
+      capable of development into a new individual either directly or after fusion
+      with another spore
+  - stem: anim
+    meaning: mind
+    example_word: unanimous
+    example_definition: everyone is in total agreement
+- lesson: 18
+  stems:
+  - stem: cardio
+    meaning: heart
+    example_word: cardiology
+    example_definition: the study of the heart
+  - stem: greg
+    meaning: group
+    example_word: aggregate
+    example_definition: form or group into a class or cluster
+  - stem: diplo
+    meaning: double
+    example_word: diploid
+    example_definition: a cell or organism with two complete sets of chromosomes
+  - stem: cede
+    meaning: go
+    example_word: secede
+    example_definition: to separate from a nation or state and become independent
+  - stem: ante
+    meaning: before
+    example_word: antecedent
+    example_definition: preceding in time or order; previous or preexisting
+  - stem: rub
+    meaning: red
+    example_word: ruby
+    example_definition: a red variety of a gem or stone
+  - stem: phyll
+    meaning: leaf
+    example_word: chlorophyll
+    example_definition: a green pigment present in all plants responsible for the
+      absorption of light
+- lesson: 19
+  stems:
+  - stem: erythro
+    meaning: red
+    example_word: erythrocytes
+    example_definition: a type of blood cell that is made in the bone marrow and found
+      in the blood
+  - stem: hyper
+    meaning: over
+    example_word: hyperventilate
+    example_definition: a rapid or deep breathing ; over breathing
+  - stem: hetero
+    meaning: different
+    example_word: heterogenous
+    example_definition: compose of parts of different kinds; unlike
+  - stem: i
+    meaning: plural
+    example_word: cacti
+    example_definition: the plural form of cactus
+  - stem: ess
+    meaning: female
+    example_word: actress
+    example_definition: a woman or girl who is an actor
+  - stem: monger
+    meaning: seller
+    example_word: fishmonger
+    example_definition: someone who sells raw fish and seafood
+  - stem: nano
+    meaning: billionth
+    example_word: nanosecond
+    example_definition: one billionth of a second
+- lesson: 20
+  stems:
+  - stem: oid
+    meaning: appearance
+    example_word: planetoid
+    example_definition: a small body with an appearance of a planet; asteroid
+  - stem: phag
+    meaning: eat
+    example_word: phytophage
+    example_definition: an organism that eats or consumes living plant tissue
+  - stem: lent
+    meaning: full of
+    example_word: benevolent
+    example_definition: well meaning; expressing goodwill or kindly feelings
+  - stem: ist
+    meaning: one who
+    example_word: artist
+    example_definition: a person who makes paintings or drawings
+  - stem: ine
+    meaning: nature of
+    example_word: marine
+    example_definition: found in or produced by the sea
+  - stem: ician
+    meaning: specialist
+    example_word: pediatrician
+    example_definition: someone who limits his/her study or work to a particular knowledge;
+      an expert in this area
+  - stem: eco
+    meaning: house
+    example_word: ecosystem
+    example_definition: a community of plants and animals, in a particular area
