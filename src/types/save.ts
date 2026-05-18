@@ -16,10 +16,9 @@ export type MasteryCounters = {
 export type StatsToday = {
 	date: string;
 	questions_answered: number;
-	correct_in_a_row_max: number;
 	stems_mastered_today: number;
 	seconds_played: number;
-	goal_rewards_granted: number;
+	goal_rewards_count_today: number;
 };
 
 export type SaveSchemaV1 = {
@@ -34,7 +33,6 @@ export type SaveSchemaV1 = {
 	daily_goals: DailyGoalsToday | null;
 	stats_today: StatsToday | null;
 	mastery: Record<string, MasteryCounters>;
-	muted: boolean;
 	last_choices_by_mode: Record<string, number>;
 };
 
@@ -51,7 +49,6 @@ export function default_save(): SaveSchemaV1 {
 		daily_goals: null,
 		stats_today: null,
 		mastery: {},
-		muted: true,
 		last_choices_by_mode: {},
 	};
 	return fresh;

@@ -10,48 +10,60 @@ import * as coins from "./coins";
 // bonuses). Common tier reachable in ~2-10 rounds, Rare in ~20-50 rounds,
 // Legendary in ~100+ rounds. Top Legendary should feel earned.
 export const THEME_CATALOG: Theme[] = [
-	// Common tier
-	{ id: "sky", display_name: "Sky", rarity: "common", cost_coins: 0 },
-	{ id: "jungle", display_name: "Jungle", rarity: "common", cost_coins: 250 },
+	// Starter Themes
+	{ id: "sky", display_name: "Sky", rarity: "common", cost_coins: 0, group: "starter" },
+	{ id: "jungle", display_name: "Jungle", rarity: "common", cost_coins: 250, group: "starter" },
 	{
 		id: "slime_world",
 		display_name: "Slime World",
 		rarity: "common",
 		cost_coins: 500,
+		group: "starter",
 	},
 	{
 		id: "candy_kingdom",
 		display_name: "Candy Kingdom",
 		rarity: "common",
 		cost_coins: 750,
+		group: "starter",
 	},
-	// Rare tier
+	// World Themes
 	{
 		id: "underwater",
 		display_name: "Underwater",
 		rarity: "rare",
 		cost_coins: 1500,
+		group: "world",
 	},
 	{
 		id: "arcade_neon",
 		display_name: "Arcade Neon",
 		rarity: "rare",
 		cost_coins: 2500,
+		group: "world",
 	},
 	{
 		id: "ancient_ruins",
 		display_name: "Ancient Ruins",
 		rarity: "rare",
 		cost_coins: 3500,
+		group: "world",
 	},
-	{ id: "lava", display_name: "Lava", rarity: "rare", cost_coins: 5000 },
-	// Legendary tier
-	{ id: "space", display_name: "Space", rarity: "legendary", cost_coins: 10000 },
+	{ id: "lava", display_name: "Lava", rarity: "rare", cost_coins: 5000, group: "world" },
+	// Mascot Themes
+	{ id: "huskies", display_name: "Huskies", rarity: "rare", cost_coins: 3000, group: "mascot" },
+	{ id: "wildcats", display_name: "Wildcats", rarity: "rare", cost_coins: 3000, group: "mascot" },
+	{ id: "bison", display_name: "Bison", rarity: "rare", cost_coins: 3000, group: "mascot" },
+	{ id: "knights", display_name: "Knights", rarity: "rare", cost_coins: 3000, group: "mascot" },
+	{ id: "marauders", display_name: "Marauders", rarity: "rare", cost_coins: 7500, group: "mascot" },
+	// Ultimate Themes
+	{ id: "space", display_name: "Space", rarity: "legendary", cost_coins: 10000, group: "ultimate" },
 	{
 		id: "galaxy",
 		display_name: "Galaxy",
 		rarity: "legendary",
 		cost_coins: 25000,
+		group: "ultimate",
 	},
 ];
 

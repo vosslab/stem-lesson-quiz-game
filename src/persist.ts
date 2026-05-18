@@ -20,6 +20,23 @@ function read_raw(): SaveSchemaV1 {
 		return default_save();
 	}
 	const save = parsed as SaveSchemaV1;
+
+	// Backward-compat: if daily_goals exists but lacks completion_bonuses_awarded_today, add it.
+	if (save.daily_goals && !save.daily_goals.completion_bonuses_awarded_today) {
+		save.daily_goals.completion_bonuses_awarded_today = {
+			three: false,
+			five: false,
+		};
+	}
+
+	// Backward-compat: if stats_today uses old field name (goal_rewards_granted), reset for safety.
+	if (save.stats_today && (save.stats_today as any).goal_rewards_granted !== undefined) {
+		save.stats_today.goal_rewards_count_today = 0;
+		delete (save.stats_today as any).goal_rewards_granted;
+	} else if (save.stats_today && !save.stats_today.goal_rewards_count_today) {
+		save.stats_today.goal_rewards_count_today = 0;
+	}
+
 	return save;
 }
 

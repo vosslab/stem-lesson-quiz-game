@@ -43,110 +43,122 @@ export function render_shop_screen(opts: ShopOpts): HTMLElement {
 	balance_display.appendChild(balance_text);
 	container.appendChild(balance_display);
 
-	// Theme grid
-	const grid = document.createElement("div");
-	grid.classList.add("scene_shop_grid");
+	// Tap-to-preview hint
+	const hint = document.createElement("div");
+	hint.classList.add("scene_shop_hint");
+	hint.textContent = "Tap card to preview";
+	container.appendChild(hint);
 
-	for (const theme of cosmetics.THEME_CATALOG) {
-		const card = document.createElement("div");
-		card.classList.add("scene_shop_card");
-		card.classList.add(`rarity_${theme.rarity}`);
+	// Group themes by category
+	const groups = [
+		{ key: "starter", label: "Starter Themes" },
+		{ key: "world", label: "World Themes" },
+		{ key: "mascot", label: "Mascot Themes" },
+		{ key: "ultimate", label: "Ultimate Themes" },
+	];
 
-		// Preview swatch
-		const preview = document.createElement("div");
-		preview.classList.add("scene_shop_preview");
-		preview.setAttribute("data-theme", theme.id);
+	for (const group of groups) {
+		const group_themes = cosmetics.THEME_CATALOG.filter(
+			(t) => t.group === group.key
+		);
+		if (group_themes.length === 0) continue;
 
-		// Show gradient and 4 button colors inline
-		const preview_style = getComputedStyle(preview);
-		const bg_a = preview_style.getPropertyValue("--bg-a");
-		const bg_b = preview_style.getPropertyValue("--bg-b");
-		const btn_1 = preview_style.getPropertyValue("--btn-1");
-		const btn_2 = preview_style.getPropertyValue("--btn-2");
-		const btn_3 = preview_style.getPropertyValue("--btn-3");
-		const btn_4 = preview_style.getPropertyValue("--btn-4");
+		// Section heading
+		const section_heading = document.createElement("h2");
+		section_heading.classList.add("scene_shop_section_heading");
+		section_heading.textContent = group.label;
+		container.appendChild(section_heading);
 
-		preview.style.background = `linear-gradient(135deg, ${bg_a}, ${bg_b})`;
+		// Grid for this group
+		const grid = document.createElement("div");
+		grid.classList.add("scene_shop_grid");
 
-		// Add 4 mini button swatches
-		const mini_buttons = document.createElement("div");
-		mini_buttons.classList.add("scene_shop_mini_buttons");
-		for (const btn_color of [btn_1, btn_2, btn_3, btn_4]) {
-			const mini = document.createElement("div");
-			mini.classList.add("scene_shop_mini_button");
-			mini.style.backgroundColor = btn_color;
-			mini_buttons.appendChild(mini);
-		}
-		preview.appendChild(mini_buttons);
+		for (const theme of group_themes) {
+			const card = document.createElement("div");
+			card.classList.add("scene_shop_card");
+			card.classList.add(`rarity_${theme.rarity}`);
 
-		card.appendChild(preview);
+			// Preview swatch (now shows motif via CSS data-theme)
+			const preview = document.createElement("div");
+			preview.classList.add("scene_shop_preview");
+			preview.setAttribute("data-theme", theme.id);
 
-		// Info section
-		const info = document.createElement("div");
-		info.classList.add("scene_shop_info");
+			card.appendChild(preview);
 
-		const name = document.createElement("h3");
-		name.textContent = theme.display_name;
-		info.appendChild(name);
+			// Info section
+			const info = document.createElement("div");
+			info.classList.add("scene_shop_info");
 
-		const price = document.createElement("div");
-		price.classList.add("scene_shop_price");
-		price.innerHTML = `<span class="scene_shop_coin_icon">c</span> ${theme.cost_coins}`;
-		info.appendChild(price);
+			const name = document.createElement("h3");
+			name.textContent = theme.display_name;
+			info.appendChild(name);
 
-		card.appendChild(info);
+			const price = document.createElement("div");
+			price.classList.add("scene_shop_price");
+			price.textContent = `Coins: ${theme.cost_coins}`;
+			info.appendChild(price);
 
-		// Action button
-		const owned = cosmetics.is_owned(theme.id);
-		const equipped = cosmetics.is_equipped(theme.id);
+			card.appendChild(info);
 
-		// Add equipped class for visual styling (gold border + glow)
-		if (equipped) {
-			card.classList.add("equipped");
-		}
+			// Action button
+			const owned = cosmetics.is_owned(theme.id);
+			const equipped = cosmetics.is_equipped(theme.id);
 
-		const button = document.createElement("button");
-		button.classList.add("scene_shop_button");
-
-		if (equipped) {
-			button.textContent = "Equipped";
-			button.disabled = true;
-		} else if (owned) {
-			button.textContent = "Equip";
-			button.addEventListener("click", () => {
-				cosmetics.equip_theme(theme.id);
-				// Update this card and all others
-				container.replaceWith(render_shop_screen(opts));
-			});
-		} else {
-			button.textContent = "Buy";
-			button.addEventListener("click", () => {
-				const result = cosmetics.purchase_theme(theme.id);
-				opts.on_purchase_attempt(theme.id, result);
-				// Re-render to update balance and button states
-				container.replaceWith(render_shop_screen(opts));
-			});
-		}
-
-		card.appendChild(button);
-
-		// Hover preview effect
-		card.addEventListener("mouseenter", () => {
-			document.body.setAttribute("data-theme", theme.id);
-		});
-		card.addEventListener("mouseleave", () => {
-			const equipped_id = cosmetics.THEME_CATALOG.find((t) =>
-				cosmetics.is_equipped(t.id)
-			)?.id;
-			if (equipped_id) {
-				document.body.setAttribute("data-theme", equipped_id);
+			// Add equipped class for visual styling
+			if (equipped) {
+				card.classList.add("equipped");
 			}
-		});
 
-		grid.appendChild(card);
+			const button = document.createElement("button");
+			button.classList.add("scene_shop_button");
+
+			if (equipped) {
+				button.textContent = "Equipped";
+				button.disabled = true;
+			} else if (owned) {
+				button.textContent = "Equip";
+				button.addEventListener("click", () => {
+					cosmetics.equip_theme(theme.id);
+					// Update this card and all others
+					container.replaceWith(render_shop_screen(opts));
+				});
+			} else {
+				button.textContent = "Buy";
+				button.addEventListener("click", () => {
+					const result = cosmetics.purchase_theme(theme.id);
+					opts.on_purchase_attempt(theme.id, result);
+					// Re-render to update balance and button states
+					container.replaceWith(render_shop_screen(opts));
+				});
+			}
+
+			card.appendChild(button);
+
+			// Tap card to preview (touch-first)
+			card.addEventListener("click", (evt) => {
+				if (evt.target !== button) {
+					document.body.setAttribute("data-theme", theme.id);
+				}
+			});
+
+			// Hover preview effect (desktop bonus)
+			card.addEventListener("mouseenter", () => {
+				document.body.setAttribute("data-theme", theme.id);
+			});
+			card.addEventListener("mouseleave", () => {
+				const equipped_id = cosmetics.THEME_CATALOG.find((t) =>
+					cosmetics.is_equipped(t.id)
+				)?.id;
+				if (equipped_id) {
+					document.body.setAttribute("data-theme", equipped_id);
+				}
+			});
+
+			grid.appendChild(card);
+		}
+
+		container.appendChild(grid);
 	}
-
-	container.appendChild(grid);
 
 	return container;
 }

@@ -82,32 +82,36 @@ The home screen includes multiple sections (all accessible via clicking or keybo
 
 ### Shop
 
-Browse and unlock themes. Themes are organized by rarity tier:
+Browse and unlock themes. The shop holds 15 themes grouped into four sections:
 
-- **Base** (free): starter themes, unlock on first play.
-- **Rare** (coins): mid-level themes, cost 500-1000 coins each.
-- **Epic** (coins): premium themes, cost 2000+ coins each.
+- **Starter Themes**: sky, jungle, slime_world, candy_kingdom.
+- **World Themes**: underwater, arcade_neon, ancient_ruins, lava.
+- **Mascot Themes**: huskies, wildcats, bison, knights, marauders (feeder-school motifs).
+- **Ultimate Themes**: space, galaxy.
 
-Tap a theme card to apply it immediately (once unlocked). Active theme is highlighted.
+Each card renders a per-theme CSS motif at rest (no hover required) so cards are distinguishable on touch. Tap a card to preview the theme immediately; use the Buy/Equip button to unlock or activate. Equipped cards show a thick border, glow, and "EQUIPPED" ribbon. Prices display as "Coins: NNNN". Theme catalog authoritative source: `src/cosmetics.ts`.
 
 ### Daily goals
 
-Track daily progress and earn streak bonuses:
+Track daily progress and earn streak + completion bonuses:
 
-- **Goal 1**: Play 3 rounds.
-- **Goal 2**: Answer 50 questions correctly.
-- **Goal 3**: Master 5 stems (mark as correct multiple times).
+- **5 goals per day** drawn from a 15-entry pool via stratified sampling (2 easy + 2 medium + 1 hard).
+- Easy goals are first-session reachable (e.g. "Answer 10 questions today", "Visit the shop").
+- Medium and hard goals stretch play sessions (e.g. "5 in a row", "Master a new stem", "80% accuracy").
+- **Completion bonuses**: +50 coins for 3 goals completed, additional +150 coins for all 5.
+- Anti-grind cap: 15 coins/day from individual goal rewards (bonuses are on top of the cap).
 
-Goals reset at midnight. Earn coins for completing goals. Streak milestones cycle deterministically; extend your streak by completing all goals on consecutive days.
+Goals reset at local midnight. Streak milestones cycle deterministically; extend your streak by completing all 5 goals on consecutive days. Goal pool authoritative source: `src/daily_goals.ts` (GOAL_POOL).
 
 ### Mastery
 
-View per-stem mastery progress. Each stem tracks:
+Wordle-inspired trophy view of all 20 lessons at a glance:
 
-- **Correct count**: number of times answered correctly.
-- **Recent mastery**: stems answered correctly in the current session.
-
-Stems with high mastery may be de-prioritized in future rounds (sampling bias toward lower-mastery stems).
+- Desktop renders a 2-column grid (10 lessons per column); mobile collapses to 1 column.
+- Each lesson card shows "Lesson N" + "M/7" progress + a row of 7 small colored tiles.
+- Tile colors are fixed across all themes: green = mastered, yellow = learning, red = weak, gray = untried.
+- Sticky header shows "X / 140 mastered" total plus Streak, Best, Theme chips and Share/Back buttons.
+- Stems with high mastery are de-prioritized in future rounds (sampling bias toward lower-mastery stems).
 
 ## Themes and customization
 

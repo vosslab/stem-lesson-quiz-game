@@ -3,7 +3,6 @@
 
 import type { Bundle, Lesson, Stem } from "./types/stem";
 import { toLessonId, toStemId } from "./brands";
-import { MOCK_BUNDLE } from "./mock_bundle";
 
 type RawStem = {
 	stem: string;
@@ -64,15 +63,9 @@ export async function load_bundle(): Promise<Bundle> {
 		return adapt_bundle(window.__STEMS_BUNDLE__);
 	}
 	// Hosted build: fetch the sibling stems_bundle.json.
-	// Use try/catch only because file:// fetch can throw rather than return !ok.
-	let response: Response;
-	try {
-		response = await fetch("stems_bundle.json");
-	} catch {
-		return MOCK_BUNDLE;
-	}
+	const response = await fetch("stems_bundle.json");
 	if (!response.ok) {
-		return MOCK_BUNDLE;
+		throw new Error(`Failed to load stems_bundle.json: ${response.status} ${response.statusText}`);
 	}
 	const raw = (await response.json()) as RawBundle;
 	return adapt_bundle(raw);

@@ -1,4 +1,4 @@
-// Goals scene: display today's 3 goals with progress bars.
+// Goals scene: display today's 5 goals with progress bars and completion bonuses.
 
 import * as daily_goals from "./daily_goals";
 
@@ -31,6 +31,45 @@ export function render_goals_screen(opts: GoalsOpts): HTMLElement {
 
 	// Ensure today's goals exist
 	const goals_today = daily_goals.ensure_today();
+	const completed_count = goals_today.progress.filter(
+		(p) => p.completed
+	).length;
+	const bonuses = goals_today.completion_bonuses_awarded_today;
+
+	// Completion bonus banner
+	const bonus_banner = document.createElement("div");
+	bonus_banner.classList.add("scene_goals_bonus_banner");
+
+	const bonus_text = document.createElement("div");
+	bonus_text.classList.add("scene_goals_bonus_text");
+	bonus_text.textContent = `Today's bonuses: ${completed_count}/5 done`;
+	bonus_banner.appendChild(bonus_text);
+
+	const bonus_list = document.createElement("div");
+	bonus_list.classList.add("scene_goals_bonus_list");
+
+	const bonus_3 = document.createElement("div");
+	bonus_3.classList.add("scene_goals_bonus_item");
+	if (bonuses.three) {
+		bonus_3.classList.add("awarded");
+		bonus_3.textContent = "3 goals: +50 coins (earned)";
+	} else {
+		bonus_3.textContent = "3 goals: +50 coins";
+	}
+	bonus_list.appendChild(bonus_3);
+
+	const bonus_5 = document.createElement("div");
+	bonus_5.classList.add("scene_goals_bonus_item");
+	if (bonuses.five) {
+		bonus_5.classList.add("awarded");
+		bonus_5.textContent = "5 goals: +150 coins (earned)";
+	} else {
+		bonus_5.textContent = "5 goals: +150 coins";
+	}
+	bonus_list.appendChild(bonus_5);
+
+	bonus_banner.appendChild(bonus_list);
+	container.appendChild(bonus_banner);
 
 	// Goals list
 	const goals_list = document.createElement("div");

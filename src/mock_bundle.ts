@@ -39,7 +39,6 @@ const lesson_1_stems: Stem[] = [
 	build_stem(1, "hema", "blood", "hemorrhage", "a discharge of blood; bleeding"),
 	build_stem(1, "hydro", "water", "hydroplane", "a craft that glides on water; a seaplane"),
 	build_stem(1, "itis", "inflammation", "bronchitis", "chronic inflammation of the bronchial tubes"),
-	build_stem(1, "morph", "form", "morphology", "the study of the form and structure of organisms"),
 ];
 
 const lesson_2_stems: Stem[] = [

@@ -2,7 +2,6 @@
 
 export interface PlayKeyHandlers {
 	on_choice: (idx: number) => void;
-	on_next: () => void;
 	on_home: () => void;
 }
 
@@ -13,7 +12,7 @@ export interface HomeKeyHandlers {
 //============================================
 
 // Attach keyboard listeners. Returns unbind function.
-// 1-8 -> on_choice(0..7), Enter/Space -> on_next, Escape -> on_home.
+// 1-8 -> on_choice(0..7), Escape -> on_home.
 export function bind_play_keys(handlers: PlayKeyHandlers): () => void {
 	function keydown(e: KeyboardEvent): void {
 		if (e.key >= "1" && e.key <= "8") {
@@ -22,9 +21,6 @@ export function bind_play_keys(handlers: PlayKeyHandlers): () => void {
 			// the handler will be called but may not match any button
 			e.preventDefault();
 			handlers.on_choice(choice_idx);
-		} else if (e.key === "Enter" || e.key === " ") {
-			e.preventDefault();
-			handlers.on_next();
 		} else if (e.key === "Escape") {
 			e.preventDefault();
 			handlers.on_home();

@@ -19,13 +19,13 @@ import { get_state, subscribe, transition } from "./screen_state";
 
 import { start_round, answer, next_question, is_round_over } from "./round";
 import { award_correct, award_round_end, get_balance } from "./coins";
-import { purchase_theme } from "./cosmetics";
 import {
 	ensure_today,
 	record_answer as record_goal_answer,
 	record_master_stem,
 	record_play_seconds,
 	grant_goal_rewards,
+	check_and_grant_completion_bonuses,
 } from "./daily_goals";
 import { record_answer_for_stem, mastery_summary } from "./mastery";
 
@@ -45,6 +45,7 @@ import { streak_banner_for } from "./feedback";
 let app_root: HTMLElement;
 let cached_bundle: Bundle;
 let active_unbind_keys: (() => void) | null = null;
+let active_unbind_esc: (() => void) | null = null;
 let pending_question: Question | null = null;
 let play_seconds_interval: ReturnType<typeof setInterval> | null = null; // Reserved for future teardown
 
@@ -178,10 +179,6 @@ function render_question(round: RoundState): void {
 				}
 			}
 		},
-		on_next: () => {
-			// Pressing Enter during a question is a no-op; advancement happens
-			// after flash_answer_feedback resolves.
-		},
 		on_home: () => transition({ kind: "home" }),
 	});
 }
@@ -212,6 +209,10 @@ async function handle_choice(round: RoundState, chosen: string): Promise<void> {
 	}
 	const goal_coins = grant_goal_rewards(completed_goals);
 	round.coins_earned += goal_coins;
+
+	// Check for completion bonuses (3 or 5 goals completed).
+	const bonus_coins = check_and_grant_completion_bonuses();
+	round.coins_earned += bonus_coins;
 
 	const scene = app_root.firstElementChild as HTMLElement | null;
 	if (scene !== null) {
@@ -266,9 +267,9 @@ function finish_round(round: RoundState): void {
 function render_shop(): void {
 	const screen = render_shop_screen({
 		on_back: () => transition({ kind: "home" }),
-		on_purchase_attempt: (id: ThemeId, _result) => {
-			// Wire the purchase through cosmetics; result is reported to the scene already.
-			void purchase_theme(id);
+		on_purchase_attempt: (_id: ThemeId, _result) => {
+			// Purchase already occurred in scene_shop.ts; this callback is for
+			// future state updates if needed. For now, no action required.
 		},
 	});
 	set_root_content(screen);
@@ -307,6 +308,24 @@ function on_screen_change(state: ScreenState): void {
 		play_seconds_interval = setInterval(() => {
 			record_play_seconds(15);
 		}, 15000);
+	}
+
+	// Bind Esc to return to home from shop/goals/mastery
+	if (active_unbind_esc !== null) {
+		active_unbind_esc();
+		active_unbind_esc = null;
+	}
+	if (state.kind === "shop" || state.kind === "goals" || state.kind === "mastery") {
+		function on_esc(e: KeyboardEvent): void {
+			if (e.key === "Escape") {
+				e.preventDefault();
+				transition({ kind: "home" });
+			}
+		}
+		window.addEventListener("keydown", on_esc);
+		active_unbind_esc = () => {
+			window.removeEventListener("keydown", on_esc);
+		};
 	}
 
 	switch (state.kind) {

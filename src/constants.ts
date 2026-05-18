@@ -23,7 +23,7 @@ export const COINS_STREAK_20 = 100;
 export const COINS_ROUND_GOOD = 25;
 export const COINS_ROUND_FLAWLESS = 75;
 export const ROUND_GOOD_ACCURACY = 0.8;
-export const DAILY_GOAL_REWARD_CAP = 10;
+export const DAILY_GOAL_REWARD_CAP = 15;
 
 // Spaced-repetition retry queue
 export const RETRY_QUEUE_RESURFACE_MIN = 3;

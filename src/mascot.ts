@@ -110,7 +110,10 @@ export function mount_mascot(parent: HTMLElement): HTMLElement {
 	const wrapper = document.createElement("div");
 	wrapper.className = "mascot-wrapper";
 	wrapper.setAttribute("data-state", "idle");
-	wrapper.innerHTML = MASCOT_SVG;
+	const parser = new DOMParser();
+	const svgDoc = parser.parseFromString(MASCOT_SVG, "image/svg+xml");
+	const svgElement = svgDoc.documentElement;
+	wrapper.appendChild(svgElement);
 	parent.appendChild(wrapper);
 	return wrapper;
 }

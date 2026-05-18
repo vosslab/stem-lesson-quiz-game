@@ -335,6 +335,12 @@ export async function flash_answer_feedback(
 
 			teaching_panel.appendChild(row2);
 
+			// Add "Tap to continue" hint at the bottom of the teaching panel
+			const hint_chip = document.createElement("div");
+			hint_chip.className = "continue-hint";
+			hint_chip.textContent = "Tap to continue";
+			teaching_panel.appendChild(hint_chip);
+
 			scene_el.appendChild(teaching_panel);
 		}
 	}
@@ -346,11 +352,8 @@ export async function flash_answer_feedback(
 		// WRONG: wait minimum time, then render hint and wait for input
 		await new Promise<void>((resolve) => setTimeout(resolve, FEEDBACK_WRONG_MS));
 
-		// Create "Tap to continue" hint chip (fixed bottom-center, pulsing)
-		const hint_chip = document.createElement("div");
-		hint_chip.className = "continue-hint";
-		hint_chip.textContent = "Tap to continue";
-		scene_el.appendChild(hint_chip);
+		// Get reference to hint chip from teaching panel
+		let hint_chip = teaching_panel?.querySelector(".continue-hint") as HTMLElement | null;
 
 		// Wait for any of: click on scene, Enter key, Space key
 		await new Promise<void>((resolve) => {
@@ -377,7 +380,9 @@ export async function flash_answer_feedback(
 		});
 
 		// Remove hint chip
-		hint_chip.remove();
+		if (hint_chip) {
+			hint_chip.remove();
+		}
 	}
 
 	// Clean up

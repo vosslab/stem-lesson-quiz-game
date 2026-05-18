@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+"""
+E2E security check: Run bandit on all tracked Python files.
+Skips common safe directories (.git, venv, etc).
+Exit 0 on no issues, exit 1 if security issues found.
+"""
 import os
 import shutil
 import subprocess
@@ -91,3 +97,9 @@ def test_bandit_security() -> None:
 		handle.write(output)
 
 	raise AssertionError("Bandit issues detected. See REPO_ROOT/report_bandit.txt")
+
+
+#============================================
+
+if __name__ == "__main__":
+	test_bandit_security()

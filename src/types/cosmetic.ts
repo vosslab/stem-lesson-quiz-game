@@ -12,12 +12,20 @@ export type ThemeId =
 	| "arcade_neon"
 	| "ancient_ruins"
 	| "lava"
+	| "marauders"
+	| "huskies"
+	| "wildcats"
+	| "bison"
+	| "knights"
 	| "space"
 	| "galaxy";
+
+export type ThemeGroup = "starter" | "world" | "mascot" | "ultimate";
 
 export type Theme = {
 	id: ThemeId;
 	display_name: string;
 	rarity: ThemeRarity;
 	cost_coins: number;
+	group: ThemeGroup;
 };

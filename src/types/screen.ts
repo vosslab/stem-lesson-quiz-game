@@ -10,5 +10,3 @@ export type ScreenState =
 	| { kind: "shop" }
 	| { kind: "goals" }
 	| { kind: "mastery" };
-
-export type ScreenKind = ScreenState["kind"];

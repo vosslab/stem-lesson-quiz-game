@@ -186,9 +186,14 @@ export function render_home_screen(opts: HomeScreenOptions): HTMLElement {
 	lesson_grid.className = "lesson-grid";
 
 	for (const lesson of bundle.lessons) {
-		const card = document.createElement("div");
+		const is_selected = selected_lessons.includes(lesson.number);
+		const card = document.createElement("button");
 		card.className = "lesson-card";
-		if (selected_lessons.includes(lesson.number)) {
+		card.setAttribute("type", "button");
+		card.setAttribute("role", "checkbox");
+		card.setAttribute("aria-checked", String(is_selected));
+		card.setAttribute("aria-label", `Lesson ${lesson.number}`);
+		if (is_selected) {
 			card.classList.add("selected");
 		}
 
@@ -204,8 +209,15 @@ export function render_home_screen(opts: HomeScreenOptions): HTMLElement {
 		card.appendChild(check_mark);
 
 		card.addEventListener("click", () => {
-			const is_selected = selected_lessons.includes(lesson.number);
 			on_lesson_toggle(lesson.number, !is_selected);
+		});
+
+		// Space and Enter should toggle selection
+		card.addEventListener("keydown", (e: KeyboardEvent) => {
+			if (e.key === " " || e.key === "Enter") {
+				e.preventDefault();
+				on_lesson_toggle(lesson.number, !is_selected);
+			}
 		});
 
 		lesson_grid.appendChild(card);

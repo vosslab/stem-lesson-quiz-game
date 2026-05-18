@@ -19,7 +19,9 @@ PORT="${PORT:-8123}"
 # Rebuild the canonical GitHub Pages artifact into dist/.
 ./build_github_pages.sh
 
-# Open the browser, then start the static server.
-sleep 1 && open "http://localhost:${PORT}/" &
-sleep 0.1
+# Open the browser if running interactively; then start the static server.
+if [ -t 0 ]; then
+	sleep 1 && open "http://localhost:${PORT}/" &
+	sleep 0.1
+fi
 python3 -m http.server "${PORT}" --directory dist
