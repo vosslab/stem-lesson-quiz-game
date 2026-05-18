@@ -137,16 +137,26 @@ export function render_home_screen(opts: HomeScreenOptions): HTMLElement {
 	coins_el.appendChild(coins_label);
 	coins_el.appendChild(coins_value);
 
-	const daily_goal_el = document.createElement("div");
-	daily_goal_el.className = "stat-item";
+	// Daily Goals stat pill doubles as a tap target -> Goals scene.
+	// Kid eval flagged that the standalone "Goals" nav button is easy to
+	// miss; the stat pill is the natural place to expect a tap.
+	const daily_goal_el = document.createElement("button");
+	daily_goal_el.className = "stat-item stat-item-tap";
+	daily_goal_el.type = "button";
+	daily_goal_el.setAttribute("aria-label", "Open daily goals");
+	daily_goal_el.addEventListener("click", on_open_goals);
 	const goal_label = document.createElement("div");
 	goal_label.className = "stat-label";
 	goal_label.textContent = "Daily Goals";
 	const goal_value = document.createElement("div");
 	goal_value.className = "stat-value";
 	goal_value.textContent = `${daily_goal_progress.completed}/${daily_goal_progress.total}`;
+	const goal_tap_hint = document.createElement("div");
+	goal_tap_hint.className = "stat-tap-hint";
+	goal_tap_hint.textContent = "TAP";
 	daily_goal_el.appendChild(goal_label);
 	daily_goal_el.appendChild(goal_value);
+	daily_goal_el.appendChild(goal_tap_hint);
 
 	const mastery_el = document.createElement("div");
 	mastery_el.className = "stat-item";

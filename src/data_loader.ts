@@ -1,5 +1,4 @@
-// Bundle loader. Tries the real JSON bundle first; falls back to MOCK_BUNDLE
-// for dev work before M1 extraction completes.
+// Bundle loader. Loads the real JSON bundle.
 
 import type { Bundle, Lesson, Stem } from "./types/stem";
 import { toLessonId, toStemId } from "./brands";

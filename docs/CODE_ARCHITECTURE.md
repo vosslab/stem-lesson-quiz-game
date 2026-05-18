@@ -25,6 +25,11 @@ game that loads a precomputed JSON bundle and runs entirely client-side.
   `confetti.ts`, `slot_palette.ts`, `style.css`.
 - Progression and persistence: `coins.ts`, `cosmetics.ts`, `daily_goals.ts`,
   `mastery.ts`, `persist.ts`, `brands.ts`.
+  - `daily_goals.ts` exports the per-event handlers
+    `record_round_end`, `record_shop_visit`, `record_theme_equipped`,
+    `record_lesson_attempted`, and `record_weak_stem_practiced`. Call sites:
+    `init.ts` (round end, lesson attempted, weak-stem practiced),
+    `scene_shop.ts` (shop visit), `cosmetics.ts` (theme equipped).
 - Input and config: `input.ts`, `constants.ts`, `data_loader.ts`,
   `distractor_score.ts`, `mock_bundle.ts`.
 - Shared types: `src/types/`.
@@ -34,6 +39,19 @@ game that loads a precomputed JSON bundle and runs entirely client-side.
 - `tools/extract_stems.py` -- PDF -> YAML.
 - `tools/yaml_to_json.py` -- YAML -> JSON bundle (asserts 20/140).
 - `tools/inline_single_file.py` -- inlines built JS/CSS/JSON into one HTML.
+
+## Save schema versioning
+
+- `SaveSchemaV1` (in `src/types/save.ts`) is versioned via the
+  `SAVE_SCHEMA_VERSION` constant; the current version is `3`.
+- Migrations live in `src/persist.ts` (`migrate_to_v3`, plus the v1->v2
+  step from the prior bump).
+- v1 saves are discarded on load (pre-feature; no real users); v2 saves
+  migrate forward by seeding the new fields with defaults.
+- v3 fields added on top of v2: `lifetime_coins`,
+  `lessons_attempted_ever`, `shop_visited_today`, `session_start_theme`,
+  `weak_stems_practiced_today`, and `goals_completed_today` (on
+  `StatsToday`).
 
 ## Test layers
 

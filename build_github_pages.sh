@@ -48,6 +48,10 @@ cp data/stems_bundle.json dist/stems_bundle.json
 # so browsers always re-fetch on a fresh build instead of serving stale
 # bundles. Use the content hash of dist/main.js + dist/style.css so the
 # query string only changes when the asset itself changes.
+# Two md5 passes: per-file hash for each asset, joined, then hashed again
+# into a single 8-char fingerprint that flips only when either file changes.
+# 8 chars: enough collision resistance for a build-time cachebust and short
+# enough to keep the URL readable.
 CACHEBUST="$(md5 -q dist/main.js dist/style.css | tr -d '\n' | md5 -q -s "$(cat)" | cut -c1-8)"
 sed \
 	-e "s|href=\"style.css\"|href=\"style.css?v=${CACHEBUST}\"|" \

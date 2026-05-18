@@ -345,6 +345,44 @@ body {
 	box-shadow: var(--shadow-card);
 }
 
+/* Tappable stat pill variant: used by stats that route somewhere
+   (e.g. Daily Goals -> Goals scene). Inherits .stat-item base, adds
+   button reset + obvious tap affordance. */
+.stat-item-tap {
+	border: 3px solid var(--accent);
+	cursor: pointer;
+	font: inherit;
+	color: inherit;
+	transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+	position: relative;
+}
+
+.stat-item-tap:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 8px 0 rgba(0, 0, 0, 0.18), 0 14px 30px rgba(0, 0, 0, 0.22);
+}
+
+.stat-item-tap:active {
+	transform: translateY(0);
+}
+
+.stat-item-tap:focus-visible {
+	outline: 3px solid var(--accent);
+	outline-offset: 3px;
+}
+
+.stat-tap-hint {
+	display: inline-block;
+	margin-top: 6px;
+	padding: 2px 8px;
+	background: var(--accent);
+	color: #ffffff;
+	font-size: 10px;
+	font-weight: 900;
+	letter-spacing: 0.8px;
+	border-radius: 999px;
+}
+
 .stat-label {
 	font-size: 16px;
 	color: var(--text-soft);
@@ -721,21 +759,29 @@ body {
 	gap: 6px;
 	flex-wrap: wrap;
 	justify-content: center;
-	max-width: 320px;
-	flex-basis: 100%;
+	width: 100%;
+	max-width: 600px;
+	margin: 12px auto 0;
 }
 
 @media (max-width: 480px) {
 	.progress-dots {
-		gap: 4px;
-		max-width: 200px;
+		gap: 3px;
+		margin-top: 8px;
+	}
+	.progress-dot {
+		width: 8px;
+		height: 8px;
 	}
 }
 
 @media (max-width: 375px) {
 	.progress-dots {
-		gap: 3px;
-		max-width: 150px;
+		gap: 2px;
+	}
+	.progress-dot {
+		width: 7px;
+		height: 7px;
 	}
 }
 
@@ -1277,6 +1323,27 @@ body {
 @keyframes hint-pulse {
 	0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
 	50% { opacity: 0.7; transform: translateX(-50%) scale(1.05); }
+}
+
+/* K2: pin the continue-hint to viewport bottom on mobile so the kid never
+   has to scroll to find it when the teaching panel extends below the fold.
+   Also signal that the panel itself is fully tappable. */
+@media (max-width: 768px) {
+	.teaching-panel {
+		cursor: pointer;
+		padding-bottom: 24px;
+	}
+	.continue-hint {
+		position: fixed;
+		bottom: 16px;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 300;
+	}
+	@keyframes hint-pulse {
+		0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+		50% { opacity: 0.7; transform: translateX(-50%) scale(1.05); }
+	}
 }
 
 .teaching-stem {

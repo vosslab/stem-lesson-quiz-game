@@ -17,8 +17,12 @@ const distDir = path.join(repoRoot, "dist");
 
 function start_server(port) {
 	const server = http.createServer((req, res) => {
+		// Strip query string before resolving to a file path. The build's
+		// cachebust appends ?v=HASH to main.js / style.css; without this
+		// strip, fs.readFile looks for "main.js?v=HASH" verbatim and 404s.
+		const url_no_query = (req.url || "/").split("?")[0];
 		// Normalize path: remove leading slash, prevent traversal
-		let filePath = req.url === "/" ? "index.html" : req.url.replace(/^\//, "");
+		let filePath = url_no_query === "/" ? "index.html" : url_no_query.replace(/^\//, "");
 
 		// Security: block path traversal
 		const normalizedPath = path.normalize(filePath);

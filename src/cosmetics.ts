@@ -4,7 +4,7 @@ import type { Theme, ThemeId } from "./types/cosmetic";
 import { load_save, mutate_save } from "./persist";
 import * as coins from "./coins";
 import {
-	record_theme_equipped,
+	record_event,
 	grant_goal_rewards,
 	check_and_grant_completion_bonuses,
 } from "./daily_goals";
@@ -137,8 +137,11 @@ export function equip_theme(id: ThemeId): void {
 	// Daily-goal hook: record the equip. First call of the day captures the
 	// baseline (no completion). Subsequent calls with a different theme id
 	// complete use_different_theme. Safe to call on repeat equips of the same
-	// theme (no-op inside record_theme_equipped).
-	const { newly_completed } = record_theme_equipped(id);
+	// theme (handler treats same-as-baseline as a no-op).
+	const { newly_completed } = record_event({
+		kind: "theme_equipped",
+		theme_id: id,
+	});
 	if (newly_completed.length > 0) {
 		grant_goal_rewards(newly_completed);
 		check_and_grant_completion_bonuses();

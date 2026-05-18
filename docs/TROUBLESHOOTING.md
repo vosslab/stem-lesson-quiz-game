@@ -6,7 +6,8 @@ Known issues and debugging steps for the stem-lesson-quiz-game.
 
 - **`./setup_game.sh` fails on first run**: ensure Node.js and npm are installed (see [docs/INSTALL.md](INSTALL.md)). The script runs `npm install` and an initial TypeScript build.
 - **`./run_web_server.sh` shows stale content**: the script rebuilds before serving. Hard-refresh the browser (Cmd+Shift+R) to bypass cache.
-- **Port 8123 already in use**: edit `run_web_server.sh` to pick a different port, or stop the conflicting process (`lsof -i :8123`).
+- **Port 8123 already in use**: `run_web_server.sh` now picks a random port (8000-8999) per session; rerun to get a fresh port, or pin one with `PORT=NNNN ./run_web_server.sh`. Stop a conflicting process with `lsof -i :NNNN`.
+- **Shop buttons look wrong, theme not changing, or a new feature is missing**: the browser is likely serving stale `main.js` / `style.css` from cache. Fix order: (1) verify the URL shows the latest random port printed by `run_web_server.sh` -- a new port should bypass cache by itself; (2) hard reload (Cmd+Shift+R on macOS); (3) DevTools -> Application -> Clear storage -> "Clear site data". Note: `build_github_pages.sh` appends `?v=HASH` cachebust query strings, but an aggressive proxy or a service worker installed on the origin can still serve stale files.
 
 ## Tests
 

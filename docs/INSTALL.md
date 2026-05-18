@@ -31,7 +31,9 @@ Install with `pip install -r pip_requirements.txt` (and `-dev` for pytest).
 
 ## Verifying the install
 
-Run `./run_web_server.sh` and load `http://localhost:8123/`. For build, test,
+Run `./run_web_server.sh`; the script prints the chosen URL (random port in
+8000-8999, e.g. `http://localhost:8517/`). Override with
+`PORT=8123 ./run_web_server.sh` for a stable URL. For build, test,
 and data-pipeline commands, see [USAGE.md](USAGE.md).
 
 ## Known gaps

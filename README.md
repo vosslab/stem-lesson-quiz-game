@@ -19,7 +19,7 @@ Each mode card displays a 3-chip row to select your preferred distractor count (
 
 ```bash
 ./setup_game.sh           # one-time: npm install + initial build
-./run_web_server.sh       # build + serve on http://localhost:8123/
+./run_web_server.sh       # build + serve on a random port (printed to stdout). PORT=8123 ./run_web_server.sh for a stable URL.
 ```
 
 To run Playwright smoke tests locally, run `./setup_playwright.sh` once, then `./check_codebase.sh` to typecheck and test.

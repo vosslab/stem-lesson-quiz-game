@@ -6,11 +6,14 @@ How to build, serve, and ship the stem-lesson-quiz-game. For in-game mechanics
 ## Local development
 
 ```bash
-./run_web_server.sh       # build + serve on http://localhost:8123/
+./run_web_server.sh       # build + serve on a random port (8000-8999)
 ```
 
 Wraps `build_github_pages.sh` (typecheck + esbuild bundle) and then starts
-`http-server` against `dist/`.
+`http-server` against `dist/`. Each session picks a random port (printed to
+stdout, e.g. `http://localhost:8517/`). The random port doubles as a
+cache-buster so the browser does not serve stale JS/CSS from a prior session.
+Override with `PORT=8123 ./run_web_server.sh` for a stable URL.
 
 ## Build artifacts
 
@@ -46,7 +49,5 @@ artifact instead.
 
 ## Known gaps
 
-- Document any CLI flags accepted by `run_web_server.sh` once they exist
-  (currently runs with hardcoded port 8123).
 - Cross-link release process to `docs/RELEASE_HISTORY.md` once that doc is
   created.

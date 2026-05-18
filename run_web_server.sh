@@ -18,6 +18,8 @@ fi
 # cache is effectively invalidated every run. Avoids "I edited code but
 # the browser is still showing the old bundle" foot-guns.
 # PORT env var still overrides (use for CI / stable URLs).
+# Range 8000-8999: unprivileged (>1024) and clear of common dev tool
+# defaults (Vite 5173, Next 3000, CRA 3000, Django 8000 base, etc.).
 PORT="${PORT:-$((8000 + RANDOM % 1000))}"
 
 # Rebuild the canonical GitHub Pages artifact into dist/.

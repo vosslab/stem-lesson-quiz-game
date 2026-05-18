@@ -58,9 +58,18 @@ async function main() {
 		console.log("[smoke] Navigating to page...");
 		await page.goto(URL, { waitUntil: "load", timeout: LOAD_TIMEOUT });
 
-		// 5. Wait for #app to contain expected text
+		// 5. Wait for bundle to fetch + home scene to render. The async
+		// load_bundle() resolves after the initial 'load' event, so poll
+		// #app text until the loading placeholder is replaced.
 		console.log("[smoke] Waiting for bundle message...");
-		await page.locator("#app").waitFor({ timeout: LOAD_TIMEOUT });
+		await page.waitForFunction(
+			() => {
+				const el = document.querySelector("#app");
+				const t = el ? el.textContent || "" : "";
+				return t.includes("Stems Quiz") || t.includes("Select All") || t.includes("PLAY");
+			},
+			{ timeout: LOAD_TIMEOUT }
+		);
 
 		const appText = await page.locator("#app").textContent();
 		// Home screen rendered: lesson picker is the canonical Batch-2 marker.

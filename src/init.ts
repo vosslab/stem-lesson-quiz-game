@@ -21,17 +21,12 @@ import { start_round, answer, next_question, is_round_over } from "./round";
 import { award_correct, award_mastery, award_round_end, get_balance } from "./coins";
 import {
 	ensure_today,
-	record_answer as record_goal_answer,
-	record_master_stem,
-	record_play_seconds,
+	record_event,
 	grant_goal_rewards,
 	check_and_grant_completion_bonuses,
-	record_round_end,
-	record_lesson_attempted,
-	record_weak_stem_practiced,
 } from "./daily_goals";
 import { record_answer_for_stem, mastery_summary } from "./mastery";
-import type { DailyGoal } from "./types/daily_goal";
+import type { GoalDefinition } from "./types/daily_goal";
 import type { LessonId } from "./brands";
 
 import { render_home_screen } from "./scene_home";
@@ -60,7 +55,7 @@ let play_seconds_interval: ReturnType<typeof setInterval> | null = null; // Rese
 // check. Returns total coins awarded so callers can add to round.coins_earned.
 // Centralizing this keeps every new record_* call site consistent with the
 // existing handle_choice pattern.
-function grant_and_check_bonuses(completed: DailyGoal[]): number {
+function grant_and_check_bonuses(completed: GoalDefinition[]): number {
 	const goal_coins = grant_goal_rewards(completed);
 	const bonus_coins = check_and_grant_completion_bonuses();
 	return goal_coins + bonus_coins;
@@ -83,7 +78,10 @@ function lesson_ids_for_round(round: RoundState): LessonId[] {
 // the current round so the kid sees them in coins_earned on the results screen.
 function on_round_started(round: RoundState): void {
 	const lesson_ids = lesson_ids_for_round(round);
-	const lesson_progress = record_lesson_attempted(lesson_ids);
+	const lesson_progress = record_event({
+		kind: "lesson_attempted",
+		lesson_ids,
+	});
 	const coins = grant_and_check_bonuses(lesson_progress.newly_completed);
 	round.coins_earned += coins;
 }
@@ -243,10 +241,14 @@ async function handle_choice(round: RoundState, chosen: string): Promise<void> {
 
 	// Mastery + daily goals
 	const mastery_result = record_answer_for_stem(q.source_stem, result.correct);
-	const goal_progress = record_goal_answer(result.correct, round.current_streak);
+	const goal_progress = record_event({
+		kind: "answer",
+		was_correct: result.correct,
+		current_streak: round.current_streak,
+	});
 	const completed_goals = [...goal_progress.newly_completed];
 	if (mastery_result.newly_mastered) {
-		const master_result = record_master_stem();
+		const master_result = record_event({ kind: "master_stem" });
 		completed_goals.push(...master_result.newly_completed);
 		// H1m: always-on coin bonus when a stem flips to mastered.
 		const mastery_coins = award_mastery();
@@ -255,7 +257,10 @@ async function handle_choice(round: RoundState, chosen: string): Promise<void> {
 	// Weak-stem credit must use was_weak_before (captured prior to the mastery
 	// mutate) so a just-improved stem still counts as practiced-while-weak.
 	if (mastery_result.was_weak_before) {
-		const weak_result = record_weak_stem_practiced(q.source_stem.id);
+		const weak_result = record_event({
+			kind: "weak_stem_practiced",
+			stem_id: q.source_stem.id,
+		});
 		completed_goals.push(...weak_result.newly_completed);
 	}
 	// Single funnel: pay goal coins + run completion-bonus check once per
@@ -286,7 +291,7 @@ function finish_round(round: RoundState): void {
 	// Round-shape daily goals: accuracy_80, finish_quick_run,
 	// finish_challenge_run, flawless_10. Funnel through the same grant +
 	// completion-bonus path used by handle_choice.
-	const round_progress = record_round_end(round);
+	const round_progress = record_event({ kind: "round_end", round });
 	const goal_coins = grant_and_check_bonuses(round_progress.newly_completed);
 	round.coins_earned += goal_coins;
 
@@ -359,7 +364,7 @@ function on_screen_change(state: ScreenState): void {
 	// Start play timer when entering question screen
 	if (state.kind === "question" && play_seconds_interval === null) {
 		play_seconds_interval = setInterval(() => {
-			record_play_seconds(15);
+			record_event({ kind: "play_seconds", seconds: 15 });
 		}, 15000);
 	}
 

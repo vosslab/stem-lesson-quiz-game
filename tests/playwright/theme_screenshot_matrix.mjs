@@ -40,14 +40,16 @@ function make_save(theme, coins, choice_count, with_mastery = false) {
     }
   }
   return JSON.stringify({
-    version: 1, coins: coins,
+    version: 3, coins: coins,
+    lifetime_coins: coins,
     owned_themes: ALL_THEMES,
     equipped_theme: theme,
-    best_score: 1000, best_streak: 12,
+    best_streak: 12,
     lesson_selection: [1,2,3],
     last_mode_id: null, daily_goals: null, stats_today: null,
     mastery: mastery_obj,
-    last_choices_by_mode: choice_count ? { 'quick': choice_count } : {}
+    last_choices_by_mode: choice_count ? { 'quick_run': choice_count } : {},
+    lessons_attempted_ever: []
   });
 }
 

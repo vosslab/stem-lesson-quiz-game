@@ -87,8 +87,10 @@ export function render_question_screen(opts: {
 
 	top_bar.appendChild(streak_counter);
 	top_bar.appendChild(coins_display);
-	top_bar.appendChild(progress_dots);
 	top_bar.appendChild(session_counter);
+	// progress_dots moved to the bottom of scene_play below so dot rows
+	// don't crowd the top bar on mobile when target_question_count is high
+	// (e.g. Challenge mode = 25 dots).
 
 	// Question card. Direction is signaled three ways at once so it reads
 	// across the room: (1) colored top stripe, (2) directional chip with
@@ -189,6 +191,7 @@ export function render_question_screen(opts: {
 	container.appendChild(top_bar);
 	container.appendChild(question_card);
 	container.appendChild(buttons_grid);
+	container.appendChild(progress_dots);
 	container.appendChild(mascot_slot);
 
 	return container;

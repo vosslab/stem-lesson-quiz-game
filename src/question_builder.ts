@@ -273,14 +273,6 @@ export function pick_next_question(
 		selected_distractors.push(top_n_stems[idx]);
 	}
 
-	// Log once to console if we had to clamp
-	if (actual_distractor_count < distractor_count) {
-		console.log(
-			`Distractor pool clamped: requested ${distractor_count}, ` +
-			`got ${actual_distractor_count} (lesson has limited stems)`
-		);
-	}
-
 	// Wildcard escape: with 15% chance, replace one distractor with random from full pool
 	if (selected_distractors.length > 0 && Math.random() < 0.15) {
 		const replacement_idx = Math.floor(Math.random() * selected_distractors.length);
@@ -288,7 +280,7 @@ export function pick_next_question(
 		selected_distractors[replacement_idx] = wildcard_stem;
 	}
 
-	// Build the choices array (correct + 3 distractors)
+	// Build the choices array (correct + N distractors)
 	const distractor_choices = new Set<string>();
 	distractor_choices.add(correct_choice);
 
@@ -301,6 +293,30 @@ export function pick_next_question(
 			distractor_choices.add(choice);
 			return true;
 		});
+
+	// Top-up from the FULL 140-stem corpus if dedup or thin-lesson sampling
+	// shrank distractors below requested count. The plan calls for always
+	// padding to choices_per_question rather than letting kids see flickering
+	// 4-vs-3 button counts. Cross-lesson borrows only as a last resort, so
+	// same-lesson confusability still dominates the question feel.
+	if (distractors.length < distractor_count) {
+		const corpus_shuffled = bundle.all_stems.slice();
+		for (let i = corpus_shuffled.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			const tmp = corpus_shuffled[i];
+			corpus_shuffled[i] = corpus_shuffled[j];
+			corpus_shuffled[j] = tmp;
+		}
+		for (const stem of corpus_shuffled) {
+			if (distractors.length >= distractor_count) break;
+			if (stem.id === selected_stem.id) continue;
+			const choice_value =
+				direction === "stem_to_meaning" ? stem.meaning : stem.stem;
+			if (distractor_choices.has(choice_value)) continue;
+			distractor_choices.add(choice_value);
+			distractors.push(choice_value);
+		}
+	}
 
 	const choices = [correct_choice, ...distractors];
 

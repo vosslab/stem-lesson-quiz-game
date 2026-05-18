@@ -4,7 +4,7 @@ import type { Theme, ThemeId } from "./types/cosmetic";
 import * as cosmetics from "./cosmetics";
 import { get_balance } from "./coins";
 import {
-	record_shop_visit,
+	record_event,
 	grant_goal_rewards,
 	check_and_grant_completion_bonuses,
 } from "./daily_goals";
@@ -22,11 +22,11 @@ interface ShopOpts {
 //============================================
 
 export function render_shop_screen(opts: ShopOpts): HTMLElement {
-	// Record the shop visit for daily goals. record_shop_visit is idempotent:
-	// after the first call completes the visit_shop goal, subsequent calls
-	// (from re-renders triggered by equip/purchase clicks) return an empty
+	// Record the shop visit for daily goals. Idempotent: after the first
+	// dispatch completes the visit_shop goal, subsequent calls (from
+	// re-renders triggered by equip/purchase clicks) return an empty
 	// newly_completed array, so the grant + bonus chain is naturally skipped.
-	const { newly_completed } = record_shop_visit();
+	const { newly_completed } = record_event({ kind: "shop_visit" });
 	if (newly_completed.length > 0) {
 		grant_goal_rewards(newly_completed);
 		check_and_grant_completion_bonuses();
@@ -149,11 +149,27 @@ export function render_shop_screen(opts: ShopOpts): HTMLElement {
 					button.classList.add("unaffordable");
 				} else {
 					button.textContent = "Buy";
-					button.addEventListener("click", async () => {
+					button.addEventListener("click", async (evt) => {
+						// Block bubbling to the card click handler so the
+						// card preview never fires from a Buy tap.
+						evt.stopPropagation();
+						// Snapshot the currently-equipped theme so a cancel
+						// (or any earlier tap-preview bleed) restores the
+						// kid's actual equipped look on dismissal.
+						const equipped_before = cosmetics.THEME_CATALOG.find(
+							(t) => cosmetics.is_equipped(t.id)
+						)?.id;
 						// Show confirmation modal so a stray tap does not
 						// drain coins on an accidental purchase.
 						const confirmed = await show_buy_confirmation(theme);
-						if (!confirmed) return;
+						if (!confirmed) {
+							// Restore equipped theme preview after cancel
+							// to kill any prior shop-preview bleed.
+							if (equipped_before) {
+								document.body.setAttribute("data-theme", equipped_before);
+							}
+							return;
+						}
 						const result = cosmetics.purchase_theme(theme.id);
 						opts.on_purchase_attempt(theme.id, result);
 						// Re-render to update balance and button states

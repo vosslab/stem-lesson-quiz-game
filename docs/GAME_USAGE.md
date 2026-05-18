@@ -57,6 +57,16 @@ After pressing a wrong answer:
 
 Correct answers auto-advance after 800ms (no explicit action required).
 
+### Retry queue (mode-gated)
+
+Missed stems may resurface later in the same round depending on the mode:
+
+- **Quick Run (10 questions)**: retry queue OFF. Missed stems do not resurface in the same round (a 10-Q pool plus retry felt like duplicates).
+- **Challenge (25 questions)**: retry queue ON. Missed stems resurface 10-20 questions later.
+- **Endless**: retry queue ON. Same 10-20 question resurface gap.
+
+Longer modes benefit from spaced-repetition resurfacing; shorter modes stay pop-quiz-clean.
+
 ### End of round
 
 After the final question, the round ends and transitions back to the home screen. Daily goals and mastery progress are updated. Coin rewards are the primary reward signal: per-question coins (base + ramp + streak tiers), mastery bonuses, plus round-end bonuses (good round at >= 60% accuracy, flawless round at 10/10).

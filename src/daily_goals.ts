@@ -1,14 +1,20 @@
 // Daily goals: refresh at local midnight, track progress, grant rewards.
 // 5 per day from stratified pool. Completion bonuses at 3/5 completed.
+//
+// Centralized event dispatch (2026-05-18): there is ONE funnel, record_event.
+// Each goal in GOAL_POOL declares its own handle(event, prog, save) function,
+// so adding a new GoalId without wiring a handler is a TS compile error
+// (GOAL_POOL is typed GoalDefinition[]). Handlers are side-effect-free; the
+// dispatcher mutates persisted counters in stats_today BEFORE calling the
+// handlers so they always see fresh values.
 
-import type { LessonId, StemId } from "./brands";
 import type {
-	DailyGoal,
+	GameEvent,
+	GoalDefinition,
 	DailyGoalProgress,
 	DailyGoalsToday,
 } from "./types/daily_goal";
-import type { ThemeId } from "./types/cosmetic";
-import type { RoundState } from "./types/question";
+import type { SaveSchemaV1 } from "./types/save";
 import { DAILY_GOAL_REWARD_CAP } from "./constants";
 import { load_save, mutate_save } from "./persist";
 
@@ -24,8 +30,197 @@ const CHALLENGE_RUN_QUESTION_COUNT = 25;
 const FLAWLESS_10_REQUIRED_CORRECT = 10;
 
 //============================================
+// Per-goal handlers. Each returns the new value for prog.current.
+// Goals not interested in this event kind return prog.current unchanged
+// (i.e. a no-op). The central dispatch reads prog.current after the call
+// and flips prog.completed when it crosses target.
+//============================================
 
-export const GOAL_POOL: DailyGoal[] = [
+// answer_10: raw counter from stats_today (bumped by dispatch pre-handler).
+function handle_answer_10(
+	event: GameEvent,
+	prog: DailyGoalProgress,
+	save: SaveSchemaV1
+): number {
+	if (event.kind !== "answer") return prog.current;
+	if (save.stats_today === null) return prog.current;
+	return save.stats_today.questions_answered;
+}
+
+// five_in_a_row: keep the highest correct-streak seen today.
+function handle_five_in_a_row(
+	event: GameEvent,
+	prog: DailyGoalProgress,
+	_save: SaveSchemaV1
+): number {
+	if (event.kind !== "answer") return prog.current;
+	if (event.was_correct && event.current_streak > prog.current) {
+		return event.current_streak;
+	}
+	return prog.current;
+}
+
+// beat_streak: save.best_streak still holds the prior lifetime best during
+// play (init.ts only refreshes it at finish_round), so direct compare is safe.
+function handle_beat_streak(
+	event: GameEvent,
+	prog: DailyGoalProgress,
+	save: SaveSchemaV1
+): number {
+	if (event.kind !== "answer") return prog.current;
+	if (event.was_correct && event.current_streak > save.best_streak) {
+		return 1;
+	}
+	return prog.current;
+}
+
+// play_5_minutes: read the dispatch-bumped seconds_played counter.
+function handle_play_5_minutes(
+	event: GameEvent,
+	prog: DailyGoalProgress,
+	save: SaveSchemaV1
+): number {
+	if (event.kind !== "play_seconds") return prog.current;
+	if (save.stats_today === null) return prog.current;
+	return save.stats_today.seconds_played;
+}
+
+// master_new_stem / master_3_stems: both read the dispatch-bumped
+// stems_mastered_today counter; targets differ (1 vs 3).
+function handle_master_stem_counter(
+	event: GameEvent,
+	prog: DailyGoalProgress,
+	save: SaveSchemaV1
+): number {
+	if (event.kind !== "master_stem") return prog.current;
+	if (save.stats_today === null) return prog.current;
+	return save.stats_today.stems_mastered_today;
+}
+
+// accuracy_80: fires on any round end with >=80% accuracy and at least one
+// answered question. Endless rounds count if the kid quits with that accuracy.
+function handle_accuracy_80(
+	event: GameEvent,
+	prog: DailyGoalProgress,
+	_save: SaveSchemaV1
+): number {
+	if (event.kind !== "round_end") return prog.current;
+	const r = event.round;
+	const total_answered = r.correct_count + r.wrong_count;
+	if (total_answered === 0) return prog.current;
+	const accuracy = r.correct_count / total_answered;
+	if (accuracy >= ACCURACY_80_THRESHOLD) return 1;
+	return prog.current;
+}
+
+// finish_quick_run: bounded round whose configured length matches Quick Run.
+function handle_finish_quick_run(
+	event: GameEvent,
+	prog: DailyGoalProgress,
+	_save: SaveSchemaV1
+): number {
+	if (event.kind !== "round_end") return prog.current;
+	const r = event.round;
+	if (r.config.endless) return prog.current;
+	if (r.config.target_question_count === QUICK_RUN_QUESTION_COUNT) return 1;
+	return prog.current;
+}
+
+// finish_challenge_run: bounded round whose length matches Challenge.
+function handle_finish_challenge_run(
+	event: GameEvent,
+	prog: DailyGoalProgress,
+	_save: SaveSchemaV1
+): number {
+	if (event.kind !== "round_end") return prog.current;
+	const r = event.round;
+	if (r.config.endless) return prog.current;
+	if (r.config.target_question_count === CHALLENGE_RUN_QUESTION_COUNT) return 1;
+	return prog.current;
+}
+
+// flawless_10: exactly 10 correct, zero wrong, bounded run.
+function handle_flawless_10(
+	event: GameEvent,
+	prog: DailyGoalProgress,
+	_save: SaveSchemaV1
+): number {
+	if (event.kind !== "round_end") return prog.current;
+	const r = event.round;
+	if (r.config.endless) return prog.current;
+	if (r.correct_count === FLAWLESS_10_REQUIRED_CORRECT && r.wrong_count === 0) {
+		return 1;
+	}
+	return prog.current;
+}
+
+// visit_shop: dispatch already flipped stats_today.shop_visited_today.
+function handle_visit_shop(
+	event: GameEvent,
+	prog: DailyGoalProgress,
+	_save: SaveSchemaV1
+): number {
+	if (event.kind !== "shop_visit") return prog.current;
+	return 1;
+}
+
+// use_different_theme: dispatch captures session_start_theme on first equip
+// of the day; handler trips once the equipped id no longer matches baseline.
+function handle_use_different_theme(
+	event: GameEvent,
+	prog: DailyGoalProgress,
+	save: SaveSchemaV1
+): number {
+	if (event.kind !== "theme_equipped") return prog.current;
+	if (save.stats_today === null) return prog.current;
+	const baseline = save.stats_today.session_start_theme;
+	if (baseline !== null && event.theme_id !== baseline) return 1;
+	return prog.current;
+}
+
+// try_new_lesson: dispatch appended any brand-new lesson ids to
+// lessons_attempted_ever. Handler fires when at least one of the event's
+// lesson ids is in the lifetime list but the goal has not yet hit target.
+// Concretely: if any incoming lesson id was previously unknown, the dispatch
+// just added it -- detect that by checking each id against the pre-bump list
+// is not possible here (already mutated), so we rely on the dispatch having
+// only emitted lesson_attempted events with at least one id. The right check
+// is: dispatch only fires the handler when the event included any new id,
+// which we cannot know post-bump. Instead, mirror the original logic:
+// fire the goal whenever a lesson_attempted event arrives AND at least one of
+// the event's lesson ids is present in lessons_attempted_ever (always true
+// after dispatch). That over-trips. To preserve the "only on NEW lesson"
+// semantic, the dispatch must compute saw_new_lesson before mutation and
+// thread it through. See record_event below.
+function handle_try_new_lesson(
+	event: GameEvent,
+	prog: DailyGoalProgress,
+	_save: SaveSchemaV1
+): number {
+	// Dispatch sets event.lesson_ids to a non-empty list ONLY when at least
+	// one id was previously unseen (the pre-mutation filter happens inside
+	// record_event). On no-new-lesson events the dispatch substitutes an
+	// empty list, which we treat as a no-op here.
+	if (event.kind !== "lesson_attempted") return prog.current;
+	if (event.lesson_ids.length === 0) return prog.current;
+	return 1;
+}
+
+// practice_weak_stem: dispatch dedups against weak_stems_practiced_today
+// and only forwards stem ids that were NOT in the list pre-mutation. So if
+// the event arrives at all, it means the stem is freshly practiced today.
+function handle_practice_weak_stem(
+	event: GameEvent,
+	prog: DailyGoalProgress,
+	_save: SaveSchemaV1
+): number {
+	if (event.kind !== "weak_stem_practiced") return prog.current;
+	return 1;
+}
+
+//============================================
+
+export const GOAL_POOL: GoalDefinition[] = [
 	// Easy tier: first-session reachable.
 	{
 		id: "answer_10",
@@ -33,6 +228,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 10,
 		reward_coins: 20,
 		tier: "easy",
+		handle: handle_answer_10,
 	},
 	{
 		id: "play_5_minutes",
@@ -40,6 +236,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 300,
 		reward_coins: 30,
 		tier: "easy",
+		handle: handle_play_5_minutes,
 	},
 	{
 		id: "visit_shop",
@@ -47,6 +244,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 1,
 		reward_coins: 10,
 		tier: "easy",
+		handle: handle_visit_shop,
 	},
 	{
 		id: "use_different_theme",
@@ -54,6 +252,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 1,
 		reward_coins: 15,
 		tier: "easy",
+		handle: handle_use_different_theme,
 	},
 	{
 		id: "accuracy_80",
@@ -61,6 +260,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 1,
 		reward_coins: 40,
 		tier: "easy",
+		handle: handle_accuracy_80,
 	},
 	{
 		id: "finish_quick_run",
@@ -68,6 +268,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 1,
 		reward_coins: 30,
 		tier: "easy",
+		handle: handle_finish_quick_run,
 	},
 	// Medium tier: achievable with normal play.
 	{
@@ -76,6 +277,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 5,
 		reward_coins: 25,
 		tier: "medium",
+		handle: handle_five_in_a_row,
 	},
 	{
 		id: "master_new_stem",
@@ -83,6 +285,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 1,
 		reward_coins: 30,
 		tier: "medium",
+		handle: handle_master_stem_counter,
 	},
 	{
 		id: "try_new_lesson",
@@ -90,6 +293,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 1,
 		reward_coins: 25,
 		tier: "medium",
+		handle: handle_try_new_lesson,
 	},
 	{
 		id: "finish_challenge_run",
@@ -97,6 +301,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 1,
 		reward_coins: 50,
 		tier: "medium",
+		handle: handle_finish_challenge_run,
 	},
 	{
 		id: "practice_weak_stem",
@@ -104,6 +309,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 1,
 		reward_coins: 25,
 		tier: "medium",
+		handle: handle_practice_weak_stem,
 	},
 	{
 		id: "beat_streak",
@@ -111,6 +317,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 1,
 		reward_coins: 75,
 		tier: "medium",
+		handle: handle_beat_streak,
 	},
 	// Hard tier: challenging.
 	{
@@ -119,6 +326,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 1,
 		reward_coins: 75,
 		tier: "hard",
+		handle: handle_flawless_10,
 	},
 	{
 		id: "master_3_stems",
@@ -126,6 +334,7 @@ export const GOAL_POOL: DailyGoal[] = [
 		target: 3,
 		reward_coins: 60,
 		tier: "hard",
+		handle: handle_master_stem_counter,
 	},
 ];
 
@@ -190,10 +399,8 @@ export function ensure_today(): DailyGoalsToday {
 			// M1 fix: persisted lifetime-of-day counter; survives the
 			// completed=false reset that grant_goal_rewards performs.
 			goals_completed_today: 0,
-			// Phase 1: new daily-reset fields. Defaults match a fresh day:
-			// shop not yet visited, no session theme captured, no weak stems
-			// practiced. session_start_theme stays null until the first
-			// theme-equip event of the day (see record_theme_equipped).
+			// Phase 1 daily-reset fields. session_start_theme stays null until
+			// the first theme_equipped event of the day (dispatch captures it).
 			shop_visited_today: false,
 			session_start_theme: null,
 			weak_stems_practiced_today: [],
@@ -212,58 +419,89 @@ export function ensure_today(): DailyGoalsToday {
 
 //============================================
 
-export function record_answer(
-	was_correct: boolean,
-	current_streak: number
-): { newly_completed: DailyGoal[] } {
+// THE funnel. Every caller goes through here. Adding a new goal kind only
+// requires adding the GameEvent variant, the GOAL_POOL entry (with a handle:
+// function), and -- if the dispatch needs to bump a counter -- a new case in
+// the switch below. There are no scattered record_*() shims anymore.
+export function record_event(
+	event: GameEvent
+): { newly_completed: GoalDefinition[] } {
 	ensure_today();
-	const newly_completed: DailyGoal[] = [];
+	const newly_completed: GoalDefinition[] = [];
 
 	mutate_save((save) => {
 		if (save.stats_today === null) {
 			throw new Error("stats_today is null after ensure_today");
 		}
-		save.stats_today.questions_answered += 1;
-
 		if (save.daily_goals === null) {
 			throw new Error("daily_goals is null after ensure_today");
 		}
+
+		// Pre-mutation step: bump persisted counters and (for two event kinds)
+		// trim event payloads to "fresh" ids so handlers can stay trivial.
+		// This is the ONLY place save state mutates in response to events;
+		// handlers downstream are pure reads.
+		let dispatched_event: GameEvent = event;
+		switch (event.kind) {
+			case "answer":
+				save.stats_today.questions_answered += 1;
+				break;
+			case "play_seconds":
+				save.stats_today.seconds_played += event.seconds;
+				break;
+			case "master_stem":
+				save.stats_today.stems_mastered_today += 1;
+				break;
+			case "shop_visit":
+				save.stats_today.shop_visited_today = true;
+				break;
+			case "theme_equipped":
+				// First equip of the day captures the baseline; no goal fires
+				// on that first call (handler reads baseline and compares).
+				if (save.stats_today.session_start_theme === null) {
+					save.stats_today.session_start_theme = event.theme_id;
+				}
+				break;
+			case "lesson_attempted": {
+				// Filter to ONLY previously-unseen ids; append the new ones to
+				// the lifetime tracker. Handler then trips if the resulting
+				// list is non-empty. Avoids over-tripping try_new_lesson on
+				// re-runs of already-seen lessons.
+				const new_ids = event.lesson_ids.filter(
+					(id) => !save.lessons_attempted_ever.includes(id)
+				);
+				for (const id of new_ids) {
+					save.lessons_attempted_ever.push(id);
+				}
+				dispatched_event = { kind: "lesson_attempted", lesson_ids: new_ids };
+				break;
+			}
+			case "weak_stem_practiced":
+				// Dedup against today's list. If already practiced today, swap
+				// the event for a no-op (handler ignores any non-matching kind,
+				// but here we want to skip handler entirely). Simplest path:
+				// early-return from the mutate_save block.
+				if (
+					save.stats_today.weak_stems_practiced_today.includes(event.stem_id)
+				) {
+					return;
+				}
+				save.stats_today.weak_stems_practiced_today.push(event.stem_id);
+				break;
+			case "round_end":
+				// Round-shape goals read event.round directly; nothing to bump.
+				break;
+		}
+
+		// Per-goal evaluation. Handlers return a new prog.current value;
+		// dispatcher writes it and flips prog.completed once the target is hit.
 		for (const prog of save.daily_goals.progress) {
 			if (prog.completed) continue;
-
-			const goal = prog.goal;
-
-			// Track answer count for "Answer 10 questions today"
-			if (goal.id === "answer_10") {
-				prog.current = save.stats_today.questions_answered;
-				if (prog.current >= goal.target && !prog.completed) {
-					prog.completed = true;
-					newly_completed.push(goal);
-				}
-			}
-
-			// Track streak for "Get 5 correct in a row"
-			if (goal.id === "five_in_a_row") {
-				if (was_correct && current_streak > prog.current) {
-					prog.current = current_streak;
-				}
-				if (prog.current >= goal.target && !prog.completed) {
-					prog.completed = true;
-					newly_completed.push(goal);
-				}
-			}
-
-			// Track for "Beat your best streak". save.best_streak only
-			// refreshes at end-of-round (init.ts), so during play it still
-			// holds the prior lifetime best - safe to compare directly.
-			if (goal.id === "beat_streak") {
-				if (was_correct && current_streak > save.best_streak) {
-					prog.current = 1;
-				}
-				if (prog.current >= goal.target && !prog.completed) {
-					prog.completed = true;
-					newly_completed.push(goal);
-				}
+			const new_current = prog.goal.handle(dispatched_event, prog, save);
+			prog.current = new_current;
+			if (prog.current >= prog.goal.target) {
+				prog.completed = true;
+				newly_completed.push(prog.goal);
 			}
 		}
 	});
@@ -273,75 +511,7 @@ export function record_answer(
 
 //============================================
 
-export function record_play_seconds(
-	seconds: number
-): { newly_completed: DailyGoal[] } {
-	ensure_today();
-	const newly_completed: DailyGoal[] = [];
-
-	mutate_save((save) => {
-		if (save.stats_today === null) {
-			throw new Error("stats_today is null after ensure_today");
-		}
-		save.stats_today.seconds_played += seconds;
-
-		if (save.daily_goals === null) {
-			throw new Error("daily_goals is null after ensure_today");
-		}
-		for (const prog of save.daily_goals.progress) {
-			if (prog.completed) continue;
-
-			const goal = prog.goal;
-
-			if (goal.id === "play_5_minutes") {
-				prog.current = save.stats_today.seconds_played;
-				if (prog.current >= goal.target && !prog.completed) {
-					prog.completed = true;
-					newly_completed.push(goal);
-				}
-			}
-		}
-	});
-
-	return { newly_completed };
-}
-
-//============================================
-
-export function record_master_stem(): { newly_completed: DailyGoal[] } {
-	ensure_today();
-	const newly_completed: DailyGoal[] = [];
-
-	mutate_save((save) => {
-		if (save.stats_today === null) {
-			throw new Error("stats_today is null after ensure_today");
-		}
-		save.stats_today.stems_mastered_today += 1;
-
-		if (save.daily_goals === null) {
-			throw new Error("daily_goals is null after ensure_today");
-		}
-		for (const prog of save.daily_goals.progress) {
-			if (prog.completed) continue;
-
-			const goal = prog.goal;
-
-			if (goal.id === "master_new_stem") {
-				prog.current = save.stats_today.stems_mastered_today;
-				if (prog.current >= goal.target && !prog.completed) {
-					prog.completed = true;
-					newly_completed.push(goal);
-				}
-			}
-		}
-	});
-
-	return { newly_completed };
-}
-
-//============================================
-
-export function grant_goal_rewards(goals: DailyGoal[]): number {
+export function grant_goal_rewards(goals: GoalDefinition[]): number {
 	let coins_granted = 0;
 
 	mutate_save((save) => {
@@ -431,242 +601,17 @@ export function check_and_grant_completion_bonuses(): number {
 //============================================
 
 export function get_today_answered_count(): number {
-	const today = ensure_today();
-	let answered_count = 0;
-	for (const prog of today.progress) {
-		if (prog.goal.id === "answer_10") {
-			answered_count = prog.current;
-			break;
-		}
+	// Always read from stats_today.questions_answered so the play HUD
+	// keeps ticking up after the answer_10 daily goal completes.
+	// (answer_10 progress freezes at target=10 once completed; the raw
+	// counter does not, so it is the right source for the HUD widget.)
+	ensure_today();
+	const save = load_save();
+	if (save.stats_today === null) {
+		throw new Error("stats_today is null after ensure_today");
 	}
+	const answered_count = save.stats_today.questions_answered;
 	return answered_count;
-}
-
-//============================================
-
-// Phase 1 handler: end-of-round goal completion.
-// Checks accuracy_80, finish_quick_run, finish_challenge_run, flawless_10
-// based on the round's final tallies + config. Endless rounds (config.endless)
-// never trip finish_* or flawless_10 (they require a bounded run that "ends").
-// accuracy_80 still fires on endless if the kid quits with 80% accuracy.
-export function record_round_end(
-	round: RoundState
-): { newly_completed: DailyGoal[] } {
-	ensure_today();
-	const newly_completed: DailyGoal[] = [];
-
-	// Compute round-level facts up front; these never change inside mutate_save.
-	const total_answered = round.correct_count + round.wrong_count;
-	const accuracy =
-		total_answered > 0 ? round.correct_count / total_answered : 0;
-	const is_quick_run =
-		!round.config.endless &&
-		round.config.target_question_count === QUICK_RUN_QUESTION_COUNT;
-	const is_challenge_run =
-		!round.config.endless &&
-		round.config.target_question_count === CHALLENGE_RUN_QUESTION_COUNT;
-	// flawless_10: kid answered exactly 10 questions with zero wrong.
-	// Allowed in quick run (10 questions) or any other 10-question shape.
-	// Endless excluded; flawless_10 implies the run finished.
-	const is_flawless_10 =
-		!round.config.endless &&
-		round.correct_count === FLAWLESS_10_REQUIRED_CORRECT &&
-		round.wrong_count === 0;
-	// Accuracy goal only fires when the kid actually answered something.
-	const accuracy_80_hit =
-		total_answered > 0 && accuracy >= ACCURACY_80_THRESHOLD;
-
-	mutate_save((save) => {
-		if (save.daily_goals === null) {
-			throw new Error("daily_goals is null after ensure_today");
-		}
-		for (const prog of save.daily_goals.progress) {
-			if (prog.completed) continue;
-
-			const goal = prog.goal;
-
-			if (goal.id === "accuracy_80" && accuracy_80_hit) {
-				prog.current = 1;
-				prog.completed = true;
-				newly_completed.push(goal);
-			}
-
-			if (goal.id === "finish_quick_run" && is_quick_run) {
-				prog.current = 1;
-				prog.completed = true;
-				newly_completed.push(goal);
-			}
-
-			if (goal.id === "finish_challenge_run" && is_challenge_run) {
-				prog.current = 1;
-				prog.completed = true;
-				newly_completed.push(goal);
-			}
-
-			if (goal.id === "flawless_10" && is_flawless_10) {
-				prog.current = 1;
-				prog.completed = true;
-				newly_completed.push(goal);
-			}
-		}
-	});
-
-	return { newly_completed };
-}
-
-//============================================
-
-// Phase 1 handler: kid opened the shop today.
-// Idempotent -- safe to call on every shop open; only the first call of the
-// day flips the flag and completes the goal.
-export function record_shop_visit(): { newly_completed: DailyGoal[] } {
-	ensure_today();
-	const newly_completed: DailyGoal[] = [];
-
-	mutate_save((save) => {
-		if (save.stats_today === null) {
-			throw new Error("stats_today is null after ensure_today");
-		}
-		// Set idempotently; no behavior change on repeat visits.
-		save.stats_today.shop_visited_today = true;
-
-		if (save.daily_goals === null) {
-			throw new Error("daily_goals is null after ensure_today");
-		}
-		for (const prog of save.daily_goals.progress) {
-			if (prog.completed) continue;
-			if (prog.goal.id === "visit_shop") {
-				prog.current = 1;
-				prog.completed = true;
-				newly_completed.push(prog.goal);
-			}
-		}
-	});
-
-	return { newly_completed };
-}
-
-//============================================
-
-// Phase 1 handler: kid equipped a theme.
-// First call of the day captures session_start_theme as the baseline; that
-// call returns no completion (no swap has happened yet). Subsequent calls
-// complete use_different_theme when the equipped id differs from baseline.
-export function record_theme_equipped(
-	theme_id: ThemeId
-): { newly_completed: DailyGoal[] } {
-	ensure_today();
-	const newly_completed: DailyGoal[] = [];
-
-	mutate_save((save) => {
-		if (save.stats_today === null) {
-			throw new Error("stats_today is null after ensure_today");
-		}
-		// First equip of the day: snapshot the baseline. No completion yet.
-		if (save.stats_today.session_start_theme === null) {
-			save.stats_today.session_start_theme = theme_id;
-			return;
-		}
-		// Same theme as baseline: nothing to do.
-		if (save.stats_today.session_start_theme === theme_id) {
-			return;
-		}
-		// Different theme: trip the goal if it is in today's set.
-		if (save.daily_goals === null) {
-			throw new Error("daily_goals is null after ensure_today");
-		}
-		for (const prog of save.daily_goals.progress) {
-			if (prog.completed) continue;
-			if (prog.goal.id === "use_different_theme") {
-				prog.current = 1;
-				prog.completed = true;
-				newly_completed.push(prog.goal);
-			}
-		}
-	});
-
-	return { newly_completed };
-}
-
-//============================================
-
-// Phase 1 handler: kid attempted lessons in this round.
-// Pass the list of lesson ids that were part of the round (from
-// round.config.selected_lesson_numbers translated to LessonIds by caller).
-// Any id not already in lessons_attempted_ever is appended; first new id
-// trips try_new_lesson. Idempotent -- only previously-unseen ids count.
-export function record_lesson_attempted(
-	lesson_ids: LessonId[]
-): { newly_completed: DailyGoal[] } {
-	ensure_today();
-	const newly_completed: DailyGoal[] = [];
-
-	mutate_save((save) => {
-		// Determine which lesson ids are brand new for this save (not in the
-		// lifetime tracker). Append them; "any new lesson found" => goal hits.
-		let saw_new_lesson = false;
-		for (const lesson_id of lesson_ids) {
-			if (!save.lessons_attempted_ever.includes(lesson_id)) {
-				save.lessons_attempted_ever.push(lesson_id);
-				saw_new_lesson = true;
-			}
-		}
-		if (!saw_new_lesson) {
-			return;
-		}
-		if (save.daily_goals === null) {
-			throw new Error("daily_goals is null after ensure_today");
-		}
-		for (const prog of save.daily_goals.progress) {
-			if (prog.completed) continue;
-			if (prog.goal.id === "try_new_lesson") {
-				prog.current = 1;
-				prog.completed = true;
-				newly_completed.push(prog.goal);
-			}
-		}
-	});
-
-	return { newly_completed };
-}
-
-//============================================
-
-// Phase 1 handler: kid practiced a stem that was classified weak BEFORE the
-// answer was scored. Caller (init.ts) must classify the stem prior to calling
-// apply_correct/apply_wrong, then invoke this function with the stem id.
-// First weak-stem practice of the day completes practice_weak_stem. Subsequent
-// calls with new stem ids extend the dedup list but do not re-fire the goal.
-export function record_weak_stem_practiced(
-	stem_id: StemId
-): { newly_completed: DailyGoal[] } {
-	ensure_today();
-	const newly_completed: DailyGoal[] = [];
-
-	mutate_save((save) => {
-		if (save.stats_today === null) {
-			throw new Error("stats_today is null after ensure_today");
-		}
-		// Dedup: if this stem already in today's list, bail without re-firing.
-		if (save.stats_today.weak_stems_practiced_today.includes(stem_id)) {
-			return;
-		}
-		save.stats_today.weak_stems_practiced_today.push(stem_id);
-
-		if (save.daily_goals === null) {
-			throw new Error("daily_goals is null after ensure_today");
-		}
-		for (const prog of save.daily_goals.progress) {
-			if (prog.completed) continue;
-			if (prog.goal.id === "practice_weak_stem") {
-				prog.current = 1;
-				prog.completed = true;
-				newly_completed.push(prog.goal);
-			}
-		}
-	});
-
-	return { newly_completed };
 }
 
 //============================================
