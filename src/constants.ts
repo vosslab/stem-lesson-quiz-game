@@ -1,7 +1,6 @@
 // Tunable constants. Keep all magic numbers here so balance changes
 // are one-file edits.
 
-export const ROUND_QUESTION_COUNT = 10;
 export const DEFAULT_CHOICES_PER_QUESTION = 4;
 export const CHOICES_OPTIONS = [4, 6, 8] as const;
 

@@ -228,7 +228,7 @@ body {
 }
 
 .stat-label {
-	font-size: 12px;
+	font-size: 16px;
 	color: var(--text-soft);
 	font-weight: 600;
 	text-transform: uppercase;
@@ -300,6 +300,11 @@ body {
 	opacity: 1;
 }
 
+.lesson-card:focus-visible {
+	outline: 3px solid var(--accent);
+	outline-offset: 2px;
+}
+
 .mode-cards-container {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -353,6 +358,11 @@ body {
 .mode-card:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
+}
+
+.mode-card:focus-visible {
+	outline: 3px solid var(--mode-color);
+	outline-offset: 2px;
 }
 
 .mode-card-focused {
@@ -427,6 +437,11 @@ body {
 	transform: scale(0.95);
 }
 
+.choices-chip:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
+}
+
 .choices-chip-active {
 	background: var(--accent) !important;
 	border-color: var(--accent) !important;
@@ -462,6 +477,11 @@ body {
 	cursor: not-allowed;
 }
 
+.btn-primary:focus-visible {
+	outline: 3px solid #ffffff;
+	outline-offset: 2px;
+}
+
 .btn-secondary {
 	background: var(--card);
 	border: 2px solid var(--text-soft);
@@ -484,6 +504,11 @@ body {
 
 .btn-secondary:active {
 	box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary:focus-visible {
+	outline: 3px solid var(--accent);
+	outline-offset: 2px;
 }
 
 .home-nav-row {
@@ -614,8 +639,8 @@ body {
 	box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.2);
 }
 
-.btn-home-quit:focus {
-	outline: 2px solid var(--accent);
+.btn-home-quit:focus-visible {
+	outline: 3px solid var(--accent);
 	outline-offset: 2px;
 }
 
@@ -648,7 +673,7 @@ body {
 	border-top-color: var(--dir-meaning-to-stem);
 }
 
-/* Direction chip: pill with FROM -> TO labels. Color matches the card stripe. */
+/* Direction chip: pill with FROM -> TO labels. Contrasting colors for clarity. */
 .direction-chip {
 	display: inline-flex;
 	align-items: center;
@@ -660,15 +685,18 @@ body {
 	letter-spacing: 1.2px;
 	text-transform: uppercase;
 	margin-bottom: 18px;
-	color: #ffffff;
 }
 
 .direction-chip[data-direction="stem_to_meaning"] {
-	background: var(--dir-stem-to-meaning);
+	background: #ffffff;
+	color: var(--dir-stem-to-meaning);
+	border: 2px solid var(--dir-stem-to-meaning);
 }
 
 .direction-chip[data-direction="meaning_to_stem"] {
-	background: var(--dir-meaning-to-stem);
+	background: #ffffff;
+	color: var(--dir-meaning-to-stem);
+	border: 2px solid var(--dir-meaning-to-stem);
 }
 
 .chip-arrow {
@@ -761,7 +789,7 @@ body {
 	transition: all var(--transition-fast);
 	text-align: center;
 	word-wrap: break-word;
-	min-height: 80px;
+	min-height: 84px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -796,7 +824,7 @@ body {
 /* Adjust button sizing for larger choice counts to stay touch-friendly */
 .choices-grid[data-choice-count="6"] .choice-button,
 .choices-grid[data-choice-count="8"] .choice-button {
-	min-height: 70px;
+	min-height: 72px;
 	font-size: 16px;
 	padding: 16px 12px;
 }
@@ -816,6 +844,11 @@ body {
 .choice-button:active {
 	transform: translateY(2px);
 	box-shadow: inset 0 2px 0 rgba(255,255,255,0.35), inset 0 -3px 0 rgba(0,0,0,0.18), 0 4px 0 rgba(0,0,0,0.25), var(--shadow-card);
+}
+
+.choice-button:focus-visible {
+	outline: 3px solid var(--accent);
+	outline-offset: 2px;
 }
 
 
@@ -989,9 +1022,9 @@ body {
 	border: 4px solid var(--accent);
 	padding: 24px;
 	position: fixed;
-	top: 50%;
+	bottom: 160px;
 	left: 50%;
-	transform: translate(-50%, -50%) scale(0.7);
+	transform: translateX(-50%) scale(0.7);
 	animation: panel-bounce-in 400ms var(--ease-bounce) forwards;
 	box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
 	z-index: 150;
@@ -1008,11 +1041,11 @@ body {
 @keyframes panel-bounce-in {
 	0% {
 		opacity: 0;
-		transform: translate(-50%, -50%) scale(0.7);
+		transform: translateX(-50%) scale(0.7);
 	}
 	100% {
 		opacity: 1;
-		transform: translate(-50%, -50%) scale(1);
+		transform: translateX(-50%) scale(1);
 	}
 }
 
@@ -1039,9 +1072,11 @@ body {
 	border-radius: 999px;
 	font-size: 16px;
 	font-weight: 700;
-	z-index: 160;
+	z-index: 200;
 	pointer-events: none;
 	animation: hint-pulse 1.2s ease-in-out infinite;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+	opacity: 1;
 }
 
 @keyframes hint-pulse {
@@ -1202,6 +1237,49 @@ body {
 	width: 100%;
 }
 
+/* Results medal glyph (Bundle D) */
+.results-medal {
+	font-size: 96px;
+	display: block;
+	margin: 12px auto;
+	line-height: 1;
+}
+
+/* Home button in results scene (Bundle D) */
+.btn-home-results {
+	background: var(--card);
+	border: 2px solid var(--accent);
+	border-radius: var(--radius-button);
+	color: var(--accent);
+	font-family: var(--font-rounded);
+	font-size: 16px;
+	font-weight: 700;
+	padding: 12px 24px;
+	cursor: pointer;
+	transition: all var(--transition-fast);
+	min-height: 44px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+}
+
+.btn-home-results:hover {
+	background: var(--accent);
+	color: var(--card);
+	transform: scale(1.05);
+}
+
+.btn-home-results:active {
+	transform: scale(0.98);
+	box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.btn-home-results:focus-visible {
+	outline: 3px solid var(--accent);
+	outline-offset: 2px;
+}
+
 /* scene_shop */
 
 .scene_shop {
@@ -1242,6 +1320,11 @@ body {
 
 .scene_shop_header button:active {
 	transform: scale(0.95);
+}
+
+.scene_shop_header button:focus-visible {
+	outline: 3px solid var(--accent);
+	outline-offset: 2px;
 }
 
 .scene_shop_balance {
@@ -1357,6 +1440,36 @@ body {
 	opacity: 0.7;
 }
 
+.scene_shop_button:focus-visible {
+	outline: 3px solid var(--accent);
+	outline-offset: 2px;
+}
+
+/* Equipped badge for shop tiles (Bundle D) */
+.shop-tile.equipped {
+	border: 3px solid #ffd700 !important;
+	box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+	position: relative;
+}
+
+.shop-tile.equipped::after {
+	content: '\2713';
+	position: absolute;
+	top: -12px;
+	right: -12px;
+	width: 40px;
+	height: 40px;
+	background: #ffd700;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 900;
+	color: #1c2a3a;
+	font-size: 20px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 /* scene_goals */
 
 .scene_goals {
@@ -1397,6 +1510,11 @@ body {
 
 .scene_goals_header button:active {
 	transform: scale(0.95);
+}
+
+.scene_goals_header button:focus-visible {
+	outline: 3px solid var(--accent);
+	outline-offset: 2px;
 }
 
 .scene_goals_list {
@@ -1470,6 +1588,48 @@ body {
 	margin-right: 4px;
 }
 
+/* Mastery header (Bundle D) */
+.mastery-header {
+	font-size: 32px;
+	font-weight: 900;
+	margin-bottom: 16px;
+	color: var(--text);
+}
+
+/* Back button for mastery and other scenes (Bundle D) */
+.btn-back {
+	background: var(--card);
+	border: 2px solid var(--text-soft);
+	border-radius: var(--radius-button);
+	color: var(--text);
+	font-family: var(--font-rounded);
+	font-size: 16px;
+	font-weight: 700;
+	padding: 12px 24px;
+	cursor: pointer;
+	transition: all var(--transition-fast);
+	min-height: 44px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.btn-back:hover {
+	border-color: var(--accent);
+	color: var(--accent);
+	transform: scale(1.05);
+}
+
+.btn-back:active {
+	transform: scale(0.98);
+	box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.btn-back:focus-visible {
+	outline: 3px solid var(--accent);
+	outline-offset: 2px;
+}
+
 /* scene_mastery */
 
 .scene_mastery {
@@ -1510,6 +1670,11 @@ body {
 
 .scene_mastery_header button:active {
 	transform: scale(0.95);
+}
+
+.scene_mastery_header button:focus-visible {
+	outline: 3px solid #ffffff;
+	outline-offset: 2px;
 }
 
 .scene_mastery_overall {
@@ -1585,6 +1750,11 @@ body {
 
 .scene_mastery_tile:active {
 	transform: scale(0.95);
+}
+
+.scene_mastery_tile:focus-visible {
+	outline: 3px solid #ffffff;
+	outline-offset: 2px;
 }
 
 .scene_mastery_lesson_progress {

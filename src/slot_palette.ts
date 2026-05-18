@@ -1,7 +1,7 @@
 // Fixed slot identity palette: 8 colors locked to positions 1-8.
 // Button fills are set inline from these colors; they are stable across
 // all themes and audited for 5.5:1+ contrast vs white text.
-// Warm/cool alternation for perceptual separation.
+// Colors grouped: 4 warm (red, orange, magenta, yellow-green) + 4 cool (green, blue, teal, sky-blue).
 
 export const SLOT_ACCENTS: readonly string[] = [
 	"#d40000", // 1 RED
@@ -10,7 +10,7 @@ export const SLOT_ACCENTS: readonly string[] = [
 	"#c80085", // 4 MAGENTA
 	"#b74300", // 5 ORANGE
 	"#00775f", // 6 TEAL
-	"#a719db", // 7 PURPLE
+	"#076dad", // 7 SKY BLUE
 	"#6c6c00", // 8 YELLOW-GREEN
 ] as const;
 

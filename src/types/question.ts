@@ -2,6 +2,9 @@
 // Direction picks per-question; both directions appear in every round.
 
 import type { Stem } from "./stem";
+// Importing types only to avoid circular dependency
+// RetryQueue and SubjectDeck are defined in question_builder.ts
+import type { RetryQueue, SubjectDeck } from "../question_builder";
 
 export type Direction = "stem_to_meaning" | "meaning_to_stem";
 
@@ -38,4 +41,6 @@ export type RoundState = {
 	score: number;
 	coins_earned: number;
 	answers: AnswerResult[];
+	retry_queue: RetryQueue;
+	subject_deck: SubjectDeck;
 };

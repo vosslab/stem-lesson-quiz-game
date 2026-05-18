@@ -76,8 +76,9 @@ async function main() {
 		console.log("[quiz-smoke] Clicking Quick Run mode card...");
 		await modeCard.click();
 
-		// Wait for navigation away from home screen
-		await page.waitForTimeout(500);
+		// Wait for the quiz screen (choices-grid) to appear
+		console.log("[quiz-smoke] Waiting for quiz screen to load...");
+		await page.waitForSelector(".choices-grid", { timeout: 5000 });
 
 		// Check that #app no longer contains "Stems Quiz" (home screen title)
 		const appContent = await page.locator("#app").textContent();
@@ -94,15 +95,22 @@ async function main() {
 		console.log("[quiz-smoke] Pressing '1' key...");
 		await page.keyboard.press("1");
 
-		// Wait for feedback animation (FEEDBACK_WRONG_MS or FEEDBACK_CORRECT_MS)
-		await page.waitForTimeout(700);
+		// Wait for the continue-hint to appear (wrong answer) or next question (correct answer)
+		// Use a short timeout for the continue-hint check; if it doesn't appear, we had a correct answer
+		const continueHintVisible = await page.locator(".continue-hint").isVisible({ timeout: 3000 }).catch(() => false);
 
-		// If wrong answer, must press Enter to advance past the continue-hint wait
-		console.log("[quiz-smoke] Pressing Enter to confirm and advance...");
-		await page.keyboard.press("Enter");
+		if (continueHintVisible) {
+			// Wrong answer: advance by pressing Enter
+			console.log("[quiz-smoke] Wrong answer detected. Pressing Enter to confirm and advance...");
+			await page.keyboard.press("Enter");
 
-		// Wait for transition to next question
-		await page.waitForTimeout(500);
+			// Wait for next question to appear
+			await page.waitForSelector(".question-text", { timeout: 3000 });
+		} else {
+			// Correct answer: wait for auto-advance to next question
+			console.log("[quiz-smoke] Correct answer detected. Waiting for auto-advance...");
+			await page.waitForSelector(".question-text", { timeout: 3000 });
+		}
 
 		const afterInputText = await page.locator("#app").textContent();
 

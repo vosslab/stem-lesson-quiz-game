@@ -100,6 +100,11 @@ export function render_shop_screen(opts: ShopOpts): HTMLElement {
 		const owned = cosmetics.is_owned(theme.id);
 		const equipped = cosmetics.is_equipped(theme.id);
 
+		// Add equipped class for visual styling (gold border + glow)
+		if (equipped) {
+			card.classList.add("equipped");
+		}
+
 		const button = document.createElement("button");
 		button.classList.add("scene_shop_button");
 

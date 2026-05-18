@@ -14,6 +14,14 @@ export interface ResultsScreenOptions {
 
 //============================================
 
+// Medal glyphs by tier (Unicode escape sequences for ASCII compatibility)
+const MEDAL_GLYPHS: Record<string, string> = {
+	GOLD: "\u{1F947}",		// Gold medal
+	SILVER: "\u{1F948}",	// Silver medal
+	BRONZE: "\u{1F949}",	// Bronze medal (3rd place)
+	FLAWLESS: "\u{1F3C6}",	// Trophy
+};
+
 // Classify accuracy tier and return a simple trophy emoji/text label.
 function trophy_tier(accuracy: number): { tier: string; color: string } {
 	if (accuracy >= 1.0) {
@@ -52,6 +60,12 @@ export function render_results_screen(opts: ResultsScreenOptions): HTMLElement {
 	// Trophy display
 	const trophy_section = document.createElement("div");
 	trophy_section.className = `trophy-section trophy-${tier_info.color}`;
+
+	// Medal glyph
+	const medal = document.createElement("div");
+	medal.className = "results-medal";
+	medal.textContent = MEDAL_GLYPHS[tier_info.tier];
+	trophy_section.appendChild(medal);
 
 	const trophy_label = document.createElement("div");
 	trophy_label.className = "trophy-label";

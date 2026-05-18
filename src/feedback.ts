@@ -38,15 +38,22 @@ export function next_praise(pool: string[], last: string | null): string {
 
 //============================================
 
-// Build a teaching panel HTML contrasting the kid's wrong choice with the correct answer.
-// Shows both in stem &harr; meaning form regardless of direction.
-// Returns the HTML string for the panel content.
+// Build teaching panel data contrasting the kid's wrong choice with the correct answer.
+// Shows both in stem <-> meaning form regardless of direction.
+// Returns structured data for DOM construction by caller.
+export interface TeachingPanelData {
+	your_pick_stem: string;
+	your_pick_meaning: string;
+	correct_stem: string;
+	correct_meaning: string;
+}
+
 export function build_teaching_panel(opts: {
 	direction: Direction;
 	correct_stem: Stem;
 	chosen_answer: string;
 	bundle: Bundle;
-}): string {
+}): TeachingPanelData | null {
 	const { direction, correct_stem, chosen_answer, bundle } = opts;
 
 	// Find the stem that matches the chosen answer.
@@ -61,16 +68,18 @@ export function build_teaching_panel(opts: {
 		chosen_stem = bundle.all_stems.find((s) => s.stem === chosen_answer);
 	}
 
-	// If we can't find it, gracefully show what we have
+	// If we can't find it, return null
 	if (!chosen_stem) {
-		return "";
+		return null;
 	}
 
-	// Format: "You picked: [stem] = [meaning]" and "Correct: [stem] = [meaning]"
-	const picked_line = `You picked: <span class="teaching-stem">${chosen_stem.stem}</span> = <span class="teaching-meaning">${chosen_stem.meaning}</span>`;
-	const correct_line = `Correct: <span class="teaching-stem">${correct_stem.stem}</span> = <span class="teaching-meaning">${correct_stem.meaning}</span>`;
-
-	return `<div class="teaching-row">${picked_line}</div><div class="teaching-row">${correct_line}</div>`;
+	// Return structured data for caller to build DOM
+	return {
+		your_pick_stem: chosen_stem.stem,
+		your_pick_meaning: chosen_stem.meaning,
+		correct_stem: correct_stem.stem,
+		correct_meaning: correct_stem.meaning,
+	};
 }
 
 //============================================

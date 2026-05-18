@@ -257,6 +257,20 @@ export function grant_goal_rewards(goals: DailyGoal[]): number {
 
 //============================================
 
+export function get_today_answered_count(): number {
+	const today = ensure_today();
+	let answered_count = 0;
+	for (const prog of today.progress) {
+		if (prog.goal.id === "answer_10") {
+			answered_count = prog.current;
+			break;
+		}
+	}
+	return answered_count;
+}
+
+//============================================
+
 function shuffle_array<T>(arr: T[]): T[] {
 	const result = [...arr];
 	for (let i = result.length - 1; i > 0; i--) {

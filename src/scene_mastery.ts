@@ -16,27 +16,29 @@ export function render_mastery_screen(opts: MasteryOpts): HTMLElement {
 	const container = document.createElement("div");
 	container.classList.add("scene_mastery");
 
-	// Header
+	// Header with title and back button
 	const header = document.createElement("div");
-	header.classList.add("scene_mastery_header");
+	header.classList.add("mastery-header");
 
 	const title = document.createElement("h1");
 	title.textContent = "Mastery";
 	header.appendChild(title);
 
+	// Overall counter as subtitle in header
+	const summary = mastery.mastery_summary(opts.bundle);
+	const subtitle = document.createElement("div");
+	subtitle.className = "mastery-subtitle";
+	subtitle.textContent = `${summary.mastered} / ${summary.total} mastered`;
+	header.appendChild(subtitle);
+
+	// Back button top-right
 	const back_button = document.createElement("button");
+	back_button.className = "btn-back";
 	back_button.textContent = "Back";
 	back_button.addEventListener("click", opts.on_back);
 	header.appendChild(back_button);
 
 	container.appendChild(header);
-
-	// Overall counter
-	const summary = mastery.mastery_summary(opts.bundle);
-	const overall = document.createElement("div");
-	overall.classList.add("scene_mastery_overall");
-	overall.textContent = `${summary.mastered} / ${summary.total} mastered`;
-	container.appendChild(overall);
 
 	// Per-lesson grids
 	const lessons_container = document.createElement("div");

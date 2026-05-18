@@ -5,6 +5,16 @@ as a static TypeScript browser game. Aimed at middle-school students learning
 Greek and Latin roots; designed for fast play sessions, streak-driven feedback,
 coin rewards, and unlockable themes (Blooket-lite, kid-friendly, no accounts).
 
+## How to play
+
+The game offers three modes:
+
+- **Quick Run** (10 questions): rapid session, 4 distractors per question.
+- **Challenge** (25 questions): longer session, 6 distractors per question.
+- **Endless** (unlimited): marathon mode, 8 distractors per question.
+
+Each mode card displays a 3-chip row to select your preferred distractor count (4/6/8 choices). Your selection persists per mode. Answer buttons show a permanent 8-color slot identity stripe (left edge) plus theme-dependent fill. Correct answers auto-advance after 800ms; wrong answers display a pulsing "Tap to continue" hint so you can read the teaching panel at your own pace. Press Escape or tap the Home button to return to the home screen.
+
 ## Quick start
 
 ```bash
@@ -24,6 +34,7 @@ For a portable, no-server single-file build:
 
 Project docs:
 
+- [docs/GAME_USAGE.md](docs/GAME_USAGE.md): game mechanics, controls, and features.
 - [docs/CHANGELOG.md](docs/CHANGELOG.md): dated record of changes to this repo.
 
 Style and process (shared across the maintainer's repos):

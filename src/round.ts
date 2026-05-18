@@ -7,9 +7,6 @@ import { apply_correct, apply_wrong } from "./scoring";
 
 //============================================
 
-let global_retry_queue: RetryQueue;
-let global_subject_deck: SubjectDeck;
-
 //============================================
 
 export function start_round(
@@ -17,7 +14,7 @@ export function start_round(
 	config: RoundConfig
 ): RoundState {
 	const round = build_round_state(config);
-	global_retry_queue = new RetryQueue();
+	round.retry_queue = new RetryQueue();
 
 	// Build the initial pool for the deck
 	const selected_stems = bundle.all_stems.filter((stem) => {
@@ -27,7 +24,7 @@ export function start_round(
 	});
 	const pool = selected_stems.length > 0 ? selected_stems : bundle.all_stems;
 
-	global_subject_deck = new SubjectDeck(pool);
+	round.subject_deck = new SubjectDeck(pool);
 	return round;
 }
 
@@ -35,12 +32,11 @@ export function start_round(
 
 export function next_question(
 	bundle: Bundle,
-	_round: RoundState,
-	_retry: undefined
+	round: RoundState
 ): Question {
-	// Use global retry queue and subject deck (placeholder for RetryHelper reference in signature)
-	const question = pick_next_question(bundle, _round.config, global_retry_queue, global_subject_deck);
-	global_retry_queue.increment_questions();
+	// Use retry queue and subject deck from round state
+	const question = pick_next_question(bundle, round.config, round.retry_queue, round.subject_deck);
+	round.retry_queue.increment_questions();
 	return question;
 }
 
@@ -58,11 +54,9 @@ export function answer(
 	if (correct) {
 		const scoring_result = apply_correct(round);
 		points_awarded = scoring_result.points;
-		// bonus_banner from scoring_result is available if UI needs it
-		void scoring_result.bonus_banner;
 	} else {
 		apply_wrong(round);
-		global_retry_queue.push_missed(question.source_stem);
+		round.retry_queue.push_missed(question.source_stem);
 	}
 
 	round.questions_asked += 1;

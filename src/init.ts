@@ -11,6 +11,7 @@ import type {
 } from "./types/question";
 import type { ScreenState } from "./types/screen";
 import type { ThemeId } from "./types/cosmetic";
+import { DEFAULT_CHOICES_PER_QUESTION } from "./constants";
 
 import { load_bundle } from "./data_loader";
 import { load_save, mutate_save } from "./persist";
@@ -144,7 +145,7 @@ function render_home(): void {
 					selected_lesson_numbers: save.lesson_selection,
 					endless: mode_config.endless,
 					target_question_count: mode_config.target_question_count,
-					choices_per_question: save.last_choices_by_mode[mode_config.id] ?? 4,
+					choices_per_question: save.last_choices_by_mode[mode_config.id] ?? DEFAULT_CHOICES_PER_QUESTION,
 				};
 				handle_mode_selection(config);
 			}
@@ -159,7 +160,7 @@ function render_question(round: RoundState): void {
 		finish_round(round);
 		return;
 	}
-	const q = next_question(cached_bundle, round, undefined);
+	const q = next_question(cached_bundle, round);
 	pending_question = q;
 	const screen = render_question_screen({
 		question: q,
@@ -295,6 +296,19 @@ function render_mastery(): void {
 //============================================
 
 function on_screen_change(state: ScreenState): void {
+	// Clear play timer when leaving question screen
+	if (state.kind !== "question" && play_seconds_interval !== null) {
+		clearInterval(play_seconds_interval);
+		play_seconds_interval = null;
+	}
+
+	// Start play timer when entering question screen
+	if (state.kind === "question" && play_seconds_interval === null) {
+		play_seconds_interval = setInterval(() => {
+			record_play_seconds(15);
+		}, 15000);
+	}
+
 	switch (state.kind) {
 		case "home":
 			render_home();
@@ -331,11 +345,6 @@ async function main(): Promise<void> {
 		throw new Error("Missing #app root element.");
 	}
 	app_root = root;
-
-	play_seconds_interval = setInterval(() => {
-		record_play_seconds(15);
-	}, 15000);
-	void play_seconds_interval; // Reserved for future teardown
 
 	subscribe(on_screen_change);
 	// subscribe() fires immediately with current state (home). If get_state

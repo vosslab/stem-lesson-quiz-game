@@ -2,6 +2,7 @@
 
 import type { Bundle } from "./types/stem";
 import type { RoundConfig } from "./types/question";
+import { CHOICES_OPTIONS, DEFAULT_CHOICES_PER_QUESTION } from "./constants";
 
 export interface GameMode {
 	id: string;
@@ -59,7 +60,7 @@ const GAME_MODES: GameMode[] = [
 		title: "Endless",
 		tagline: "How far can you go?",
 		icon: "***",
-		question_count: 999,
+		question_count: 999, // Sentinel; endless: true is what actually controls termination
 		endless: true,
 	},
 ];
@@ -214,8 +215,6 @@ export function render_home_screen(opts: HomeScreenOptions): HTMLElement {
 	const mode_section = document.createElement("div");
 	mode_section.className = "mode-cards-container";
 
-	const CHOICES_OPTIONS = [4, 6, 8];
-
 	for (let i = 0; i < GAME_MODES.length; i++) {
 		const mode = GAME_MODES[i];
 		const card = document.createElement("button");
@@ -238,7 +237,7 @@ export function render_home_screen(opts: HomeScreenOptions): HTMLElement {
 		tagline_div.textContent = mode.tagline;
 
 		// Choices selector: 3-chip row with label
-		const current_choices = last_choices_by_mode[mode.id] ?? 4;
+		const current_choices = last_choices_by_mode[mode.id] ?? DEFAULT_CHOICES_PER_QUESTION;
 
 		const choices_label = document.createElement("div");
 		choices_label.className = "mode-card-choices-label";
@@ -276,7 +275,7 @@ export function render_home_screen(opts: HomeScreenOptions): HTMLElement {
 				selected_lesson_numbers: selected_lessons,
 				endless: mode.endless,
 				target_question_count: mode.question_count,
-				choices_per_question: last_choices_by_mode[mode.id] ?? 4,
+				choices_per_question: last_choices_by_mode[mode.id] ?? DEFAULT_CHOICES_PER_QUESTION,
 			};
 			on_play(config);
 		});

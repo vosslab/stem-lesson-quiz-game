@@ -114,6 +114,10 @@ python3 tools/contrast_calculator.py --check '#7b7737'
 ## Rules
 
 - Every foreground/background pair in our problems should be checked before use.
-- When in doubt, use the WebAIM checker or `tools/contrast_calculator.py`.
-- This doc documents the standard. Updating the existing color palette in
+- When in doubt, use the WebAIM checker or our contrast calculator.
+- This doc documents the standard. Updating the existing color palette in `src/slot_palette.ts` (8 audited slot accents, per the 14-color palette table above) requires re-auditing all affected YAML files.
+
+## Cross-repo reference
+
+The contrast calculator referenced in this doc (`tools/contrast_calculator.py`) lives in the sibling `<biology-problems>` repo. For in-repo color work, use `src/slot_palette.ts` to define slot fills and verify against the white background using WebAIM or an external WCAG calculator tool.
 

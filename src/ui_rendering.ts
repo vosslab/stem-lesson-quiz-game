@@ -7,6 +7,7 @@ import { next_praise, CORRECT_PRAISE, WRONG_PRAISE, build_teaching_panel } from 
 import { burst_confetti } from "./confetti";
 import { mount_mascot, set_mascot_state } from "./mascot";
 import { slot_accent_for } from "./slot_palette";
+import { get_today_answered_count } from "./daily_goals";
 
 let last_correct_praise: string | null = null;
 let last_wrong_praise: string | null = null;
@@ -80,7 +81,8 @@ export function render_question_screen(opts: {
 
 	const session_counter = document.createElement("div");
 	session_counter.className = "session-counter";
-	session_counter.textContent = `Today: ${0} answered`;
+	const answered_count = get_today_answered_count();
+	session_counter.textContent = `Today: ${answered_count} answered`;
 
 	top_bar.appendChild(streak_counter);
 	top_bar.appendChild(score_display);
@@ -277,16 +279,64 @@ export async function flash_answer_feedback(
 	// On wrong answer, also show teaching panel
 	let teaching_panel: HTMLElement | null = null;
 	if (!is_correct) {
-		teaching_panel = document.createElement("div");
-		teaching_panel.className = "teaching-panel";
-		const panel_html = build_teaching_panel({
+		const panel_data = build_teaching_panel({
 			direction: question.direction,
 			correct_stem: question.source_stem,
 			chosen_answer: chosen,
 			bundle,
 		});
-		teaching_panel.innerHTML = panel_html;
-		scene_el.appendChild(teaching_panel);
+		if (panel_data) {
+			teaching_panel = document.createElement("div");
+			teaching_panel.className = "teaching-panel";
+
+			// Row 1: "You picked: [stem] = [meaning]"
+			const row1 = document.createElement("div");
+			row1.className = "teaching-row";
+
+			const row1_label = document.createElement("span");
+			row1_label.textContent = "You picked: ";
+			row1.appendChild(row1_label);
+
+			const row1_stem = document.createElement("span");
+			row1_stem.className = "teaching-stem";
+			row1_stem.textContent = panel_data.your_pick_stem;
+			row1.appendChild(row1_stem);
+
+			const row1_eq = document.createElement("span");
+			row1_eq.textContent = " = ";
+			row1.appendChild(row1_eq);
+
+			const row1_meaning = document.createElement("span");
+			row1_meaning.textContent = panel_data.your_pick_meaning;
+			row1.appendChild(row1_meaning);
+
+			teaching_panel.appendChild(row1);
+
+			// Row 2: "Correct: [stem] = [meaning]"
+			const row2 = document.createElement("div");
+			row2.className = "teaching-row";
+
+			const row2_label = document.createElement("span");
+			row2_label.textContent = "Correct: ";
+			row2.appendChild(row2_label);
+
+			const row2_stem = document.createElement("span");
+			row2_stem.className = "teaching-stem";
+			row2_stem.textContent = panel_data.correct_stem;
+			row2.appendChild(row2_stem);
+
+			const row2_eq = document.createElement("span");
+			row2_eq.textContent = " = ";
+			row2.appendChild(row2_eq);
+
+			const row2_meaning = document.createElement("span");
+			row2_meaning.textContent = panel_data.correct_meaning;
+			row2.appendChild(row2_meaning);
+
+			teaching_panel.appendChild(row2);
+
+			scene_el.appendChild(teaching_panel);
+		}
 	}
 
 	if (is_correct) {
@@ -347,9 +397,6 @@ export async function flash_answer_feedback(
 		if (icon) {
 			icon.remove();
 		}
-	}
-	if (choices_grid) {
-		choices_grid.classList.remove("feedback-active");
 	}
 	praise_chip.remove();
 	if (teaching_panel !== null) {

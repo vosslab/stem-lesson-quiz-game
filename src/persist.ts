@@ -20,10 +20,6 @@ function read_raw(): SaveSchemaV1 {
 		return default_save();
 	}
 	const save = parsed as SaveSchemaV1;
-	// Ensure last_choices_by_mode exists (migration path for old saves).
-	if (!save.last_choices_by_mode) {
-		save.last_choices_by_mode = {};
-	}
 	return save;
 }
 

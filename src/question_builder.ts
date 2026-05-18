@@ -19,6 +19,9 @@ export function build_round_state(config: RoundConfig): RoundState {
 		score: 0,
 		coins_earned: 0,
 		answers: [],
+		// Placeholders; start_round will assign real instances
+		retry_queue: new RetryQueue(),
+		subject_deck: new SubjectDeck([]),
 	};
 }
 
@@ -48,7 +51,8 @@ export class RetryQueue {
 
 		// Get the front stem
 		const stem = this.queue[0];
-		const questions_passed = this.questions_since_miss.get(stem.id) ?? 0;
+		// invariant: stem was added to queue in push_missed, so it must be in questions_since_miss
+		const questions_passed = this.questions_since_miss.get(stem.id)!;
 
 		// Check if enough questions have passed (3-5 randomly)
 		const min = RETRY_QUEUE_RESURFACE_MIN;
@@ -140,10 +144,6 @@ export class SubjectDeck {
 		return stem;
 	}
 
-	record_drawn(_stem_id: string): void {
-		// No-op: tracking happens in draw() instead
-	}
-
 	is_exhausted(): boolean {
 		return this.remaining.length === 0;
 	}
@@ -180,9 +180,6 @@ export function pick_next_question(
 		// If resurfacing from retry queue, remove it from the deck to avoid re-drawing
 		subject_deck.remove_from_remaining(selected_stem.id);
 	}
-
-	// Record the selected stem in the deck (for seam tracking on reshuffle)
-	subject_deck.record_drawn(selected_stem.id);
 
 	// Coin-flip direction
 	const direction: Direction = Math.random() < 0.5 ? "stem_to_meaning" : "meaning_to_stem";
