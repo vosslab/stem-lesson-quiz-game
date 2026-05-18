@@ -1,5 +1,5 @@
 report_*.txt
-_*.*
+_[a-z]*.?*
 .DS_Store
 dist-single/
 dist/

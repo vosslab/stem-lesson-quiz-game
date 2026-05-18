@@ -41,9 +41,18 @@ npx esbuild src/init.ts \
 	--sourcemap=linked \
 	--outfile=dist/main.js
 
-cp src/index.html dist/index.html
 cp src/style.css dist/style.css
 cp data/stems_bundle.json dist/stems_bundle.json
+
+# Cachebust: append build-time hash to main.js + style.css refs in index.html
+# so browsers always re-fetch on a fresh build instead of serving stale
+# bundles. Use the content hash of dist/main.js + dist/style.css so the
+# query string only changes when the asset itself changes.
+CACHEBUST="$(md5 -q dist/main.js dist/style.css | tr -d '\n' | md5 -q -s "$(cat)" | cut -c1-8)"
+sed \
+	-e "s|href=\"style.css\"|href=\"style.css?v=${CACHEBUST}\"|" \
+	-e "s|src=\"main.js\"|src=\"main.js?v=${CACHEBUST}\"|" \
+	src/index.html > dist/index.html
 
 touch dist/.nojekyll
 

@@ -26,8 +26,13 @@ import {
 	record_play_seconds,
 	grant_goal_rewards,
 	check_and_grant_completion_bonuses,
+	record_round_end,
+	record_lesson_attempted,
+	record_weak_stem_practiced,
 } from "./daily_goals";
 import { record_answer_for_stem, mastery_summary } from "./mastery";
+import type { DailyGoal } from "./types/daily_goal";
+import type { LessonId } from "./brands";
 
 import { render_home_screen } from "./scene_home";
 import { render_results_screen } from "./scene_results";
@@ -48,6 +53,40 @@ let active_unbind_keys: (() => void) | null = null;
 let active_unbind_esc: (() => void) | null = null;
 let pending_question: Question | null = null;
 let play_seconds_interval: ReturnType<typeof setInterval> | null = null; // Reserved for future teardown
+
+//============================================
+
+// Funnel any newly-completed daily goals through coin grant + completion-bonus
+// check. Returns total coins awarded so callers can add to round.coins_earned.
+// Centralizing this keeps every new record_* call site consistent with the
+// existing handle_choice pattern.
+function grant_and_check_bonuses(completed: DailyGoal[]): number {
+	const goal_coins = grant_goal_rewards(completed);
+	const bonus_coins = check_and_grant_completion_bonuses();
+	return goal_coins + bonus_coins;
+}
+
+// Map RoundConfig.selected_lesson_numbers -> LessonId[] for daily-goal
+// tracking. LessonId is a branded string sourced from bundle.lessons.
+function lesson_ids_for_round(round: RoundState): LessonId[] {
+	const wanted = new Set(round.config.selected_lesson_numbers);
+	const ids: LessonId[] = [];
+	for (const lesson of cached_bundle.lessons) {
+		if (wanted.has(lesson.number)) {
+			ids.push(lesson.id);
+		}
+	}
+	return ids;
+}
+
+// Called at round start. Fires record_lesson_attempted; coins/bonuses land on
+// the current round so the kid sees them in coins_earned on the results screen.
+function on_round_started(round: RoundState): void {
+	const lesson_ids = lesson_ids_for_round(round);
+	const lesson_progress = record_lesson_attempted(lesson_ids);
+	const coins = grant_and_check_bonuses(lesson_progress.newly_completed);
+	round.coins_earned += coins;
+}
 
 //============================================
 
@@ -80,6 +119,7 @@ function render_home(): void {
 			s.last_mode_id = mode_id;
 		});
 		const round = start_round(cached_bundle, config);
+		on_round_started(round);
 		transition({ kind: "question", round });
 	};
 
@@ -212,12 +252,16 @@ async function handle_choice(round: RoundState, chosen: string): Promise<void> {
 		const mastery_coins = award_mastery();
 		round.coins_earned += mastery_coins;
 	}
-	const goal_coins = grant_goal_rewards(completed_goals);
-	round.coins_earned += goal_coins;
-
-	// Check for completion bonuses (3 or 5 goals completed).
-	const bonus_coins = check_and_grant_completion_bonuses();
-	round.coins_earned += bonus_coins;
+	// Weak-stem credit must use was_weak_before (captured prior to the mastery
+	// mutate) so a just-improved stem still counts as practiced-while-weak.
+	if (mastery_result.was_weak_before) {
+		const weak_result = record_weak_stem_practiced(q.source_stem.id);
+		completed_goals.push(...weak_result.newly_completed);
+	}
+	// Single funnel: pay goal coins + run completion-bonus check once per
+	// choice handle so the 3/5 bonuses fire at most once per answer.
+	const total_goal_coins = grant_and_check_bonuses(completed_goals);
+	round.coins_earned += total_goal_coins;
 
 	const scene = app_root.firstElementChild as HTMLElement | null;
 	if (scene !== null) {
@@ -239,6 +283,13 @@ function finish_round(round: RoundState): void {
 	const end_coins = award_round_end(round);
 	round.coins_earned += end_coins;
 
+	// Round-shape daily goals: accuracy_80, finish_quick_run,
+	// finish_challenge_run, flawless_10. Funnel through the same grant +
+	// completion-bonus path used by handle_choice.
+	const round_progress = record_round_end(round);
+	const goal_coins = grant_and_check_bonuses(round_progress.newly_completed);
+	round.coins_earned += goal_coins;
+
 	const save = load_save();
 	const new_best_streak = round.longest_streak > save.best_streak;
 	mutate_save((s) => {
@@ -255,6 +306,7 @@ function finish_round(round: RoundState): void {
 		new_best_streak,
 		on_play_again: () => {
 			const fresh = start_round(cached_bundle, round.config);
+			on_round_started(fresh);
 			transition({ kind: "question", round: fresh });
 		},
 		on_open_shop: () => transition({ kind: "shop" }),

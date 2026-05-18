@@ -14,7 +14,11 @@ if [ ! -d node_modules ]; then
 	exit 1
 fi
 
-PORT="${PORT:-8123}"
+# Random port per session: each port is its own browser origin, so the
+# cache is effectively invalidated every run. Avoids "I edited code but
+# the browser is still showing the old bundle" foot-guns.
+# PORT env var still overrides (use for CI / stable URLs).
+PORT="${PORT:-$((8000 + RANDOM % 1000))}"
 
 # Rebuild the canonical GitHub Pages artifact into dist/.
 ./build_github_pages.sh

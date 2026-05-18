@@ -1,13 +1,27 @@
 // Daily goals: refresh at local midnight, track progress, grant rewards.
 // 5 per day from stratified pool. Completion bonuses at 3/5 completed.
 
+import type { LessonId, StemId } from "./brands";
 import type {
 	DailyGoal,
 	DailyGoalProgress,
 	DailyGoalsToday,
 } from "./types/daily_goal";
+import type { ThemeId } from "./types/cosmetic";
+import type { RoundState } from "./types/question";
 import { DAILY_GOAL_REWARD_CAP } from "./constants";
 import { load_save, mutate_save } from "./persist";
+
+// Phase 1: hardcoded accuracy threshold for accuracy_80 goal.
+// Independent of ROUND_GOOD_ACCURACY (round-bonus knob) so future tuning of
+// the bonus knob does not accidentally retune what the daily goal demands.
+const ACCURACY_80_THRESHOLD = 0.8;
+
+// Phase 1: target question count constants for the mode-detection goals.
+// These mirror src/init.ts mode configs; if mode configs ever change, update here.
+const QUICK_RUN_QUESTION_COUNT = 10;
+const CHALLENGE_RUN_QUESTION_COUNT = 25;
+const FLAWLESS_10_REQUIRED_CORRECT = 10;
 
 //============================================
 
@@ -176,6 +190,13 @@ export function ensure_today(): DailyGoalsToday {
 			// M1 fix: persisted lifetime-of-day counter; survives the
 			// completed=false reset that grant_goal_rewards performs.
 			goals_completed_today: 0,
+			// Phase 1: new daily-reset fields. Defaults match a fresh day:
+			// shop not yet visited, no session theme captured, no weak stems
+			// practiced. session_start_theme stays null until the first
+			// theme-equip event of the day (see record_theme_equipped).
+			shop_visited_today: false,
+			session_start_theme: null,
+			weak_stems_practiced_today: [],
 		};
 
 		mutate_save((save) => {
@@ -419,6 +440,233 @@ export function get_today_answered_count(): number {
 		}
 	}
 	return answered_count;
+}
+
+//============================================
+
+// Phase 1 handler: end-of-round goal completion.
+// Checks accuracy_80, finish_quick_run, finish_challenge_run, flawless_10
+// based on the round's final tallies + config. Endless rounds (config.endless)
+// never trip finish_* or flawless_10 (they require a bounded run that "ends").
+// accuracy_80 still fires on endless if the kid quits with 80% accuracy.
+export function record_round_end(
+	round: RoundState
+): { newly_completed: DailyGoal[] } {
+	ensure_today();
+	const newly_completed: DailyGoal[] = [];
+
+	// Compute round-level facts up front; these never change inside mutate_save.
+	const total_answered = round.correct_count + round.wrong_count;
+	const accuracy =
+		total_answered > 0 ? round.correct_count / total_answered : 0;
+	const is_quick_run =
+		!round.config.endless &&
+		round.config.target_question_count === QUICK_RUN_QUESTION_COUNT;
+	const is_challenge_run =
+		!round.config.endless &&
+		round.config.target_question_count === CHALLENGE_RUN_QUESTION_COUNT;
+	// flawless_10: kid answered exactly 10 questions with zero wrong.
+	// Allowed in quick run (10 questions) or any other 10-question shape.
+	// Endless excluded; flawless_10 implies the run finished.
+	const is_flawless_10 =
+		!round.config.endless &&
+		round.correct_count === FLAWLESS_10_REQUIRED_CORRECT &&
+		round.wrong_count === 0;
+	// Accuracy goal only fires when the kid actually answered something.
+	const accuracy_80_hit =
+		total_answered > 0 && accuracy >= ACCURACY_80_THRESHOLD;
+
+	mutate_save((save) => {
+		if (save.daily_goals === null) {
+			throw new Error("daily_goals is null after ensure_today");
+		}
+		for (const prog of save.daily_goals.progress) {
+			if (prog.completed) continue;
+
+			const goal = prog.goal;
+
+			if (goal.id === "accuracy_80" && accuracy_80_hit) {
+				prog.current = 1;
+				prog.completed = true;
+				newly_completed.push(goal);
+			}
+
+			if (goal.id === "finish_quick_run" && is_quick_run) {
+				prog.current = 1;
+				prog.completed = true;
+				newly_completed.push(goal);
+			}
+
+			if (goal.id === "finish_challenge_run" && is_challenge_run) {
+				prog.current = 1;
+				prog.completed = true;
+				newly_completed.push(goal);
+			}
+
+			if (goal.id === "flawless_10" && is_flawless_10) {
+				prog.current = 1;
+				prog.completed = true;
+				newly_completed.push(goal);
+			}
+		}
+	});
+
+	return { newly_completed };
+}
+
+//============================================
+
+// Phase 1 handler: kid opened the shop today.
+// Idempotent -- safe to call on every shop open; only the first call of the
+// day flips the flag and completes the goal.
+export function record_shop_visit(): { newly_completed: DailyGoal[] } {
+	ensure_today();
+	const newly_completed: DailyGoal[] = [];
+
+	mutate_save((save) => {
+		if (save.stats_today === null) {
+			throw new Error("stats_today is null after ensure_today");
+		}
+		// Set idempotently; no behavior change on repeat visits.
+		save.stats_today.shop_visited_today = true;
+
+		if (save.daily_goals === null) {
+			throw new Error("daily_goals is null after ensure_today");
+		}
+		for (const prog of save.daily_goals.progress) {
+			if (prog.completed) continue;
+			if (prog.goal.id === "visit_shop") {
+				prog.current = 1;
+				prog.completed = true;
+				newly_completed.push(prog.goal);
+			}
+		}
+	});
+
+	return { newly_completed };
+}
+
+//============================================
+
+// Phase 1 handler: kid equipped a theme.
+// First call of the day captures session_start_theme as the baseline; that
+// call returns no completion (no swap has happened yet). Subsequent calls
+// complete use_different_theme when the equipped id differs from baseline.
+export function record_theme_equipped(
+	theme_id: ThemeId
+): { newly_completed: DailyGoal[] } {
+	ensure_today();
+	const newly_completed: DailyGoal[] = [];
+
+	mutate_save((save) => {
+		if (save.stats_today === null) {
+			throw new Error("stats_today is null after ensure_today");
+		}
+		// First equip of the day: snapshot the baseline. No completion yet.
+		if (save.stats_today.session_start_theme === null) {
+			save.stats_today.session_start_theme = theme_id;
+			return;
+		}
+		// Same theme as baseline: nothing to do.
+		if (save.stats_today.session_start_theme === theme_id) {
+			return;
+		}
+		// Different theme: trip the goal if it is in today's set.
+		if (save.daily_goals === null) {
+			throw new Error("daily_goals is null after ensure_today");
+		}
+		for (const prog of save.daily_goals.progress) {
+			if (prog.completed) continue;
+			if (prog.goal.id === "use_different_theme") {
+				prog.current = 1;
+				prog.completed = true;
+				newly_completed.push(prog.goal);
+			}
+		}
+	});
+
+	return { newly_completed };
+}
+
+//============================================
+
+// Phase 1 handler: kid attempted lessons in this round.
+// Pass the list of lesson ids that were part of the round (from
+// round.config.selected_lesson_numbers translated to LessonIds by caller).
+// Any id not already in lessons_attempted_ever is appended; first new id
+// trips try_new_lesson. Idempotent -- only previously-unseen ids count.
+export function record_lesson_attempted(
+	lesson_ids: LessonId[]
+): { newly_completed: DailyGoal[] } {
+	ensure_today();
+	const newly_completed: DailyGoal[] = [];
+
+	mutate_save((save) => {
+		// Determine which lesson ids are brand new for this save (not in the
+		// lifetime tracker). Append them; "any new lesson found" => goal hits.
+		let saw_new_lesson = false;
+		for (const lesson_id of lesson_ids) {
+			if (!save.lessons_attempted_ever.includes(lesson_id)) {
+				save.lessons_attempted_ever.push(lesson_id);
+				saw_new_lesson = true;
+			}
+		}
+		if (!saw_new_lesson) {
+			return;
+		}
+		if (save.daily_goals === null) {
+			throw new Error("daily_goals is null after ensure_today");
+		}
+		for (const prog of save.daily_goals.progress) {
+			if (prog.completed) continue;
+			if (prog.goal.id === "try_new_lesson") {
+				prog.current = 1;
+				prog.completed = true;
+				newly_completed.push(prog.goal);
+			}
+		}
+	});
+
+	return { newly_completed };
+}
+
+//============================================
+
+// Phase 1 handler: kid practiced a stem that was classified weak BEFORE the
+// answer was scored. Caller (init.ts) must classify the stem prior to calling
+// apply_correct/apply_wrong, then invoke this function with the stem id.
+// First weak-stem practice of the day completes practice_weak_stem. Subsequent
+// calls with new stem ids extend the dedup list but do not re-fire the goal.
+export function record_weak_stem_practiced(
+	stem_id: StemId
+): { newly_completed: DailyGoal[] } {
+	ensure_today();
+	const newly_completed: DailyGoal[] = [];
+
+	mutate_save((save) => {
+		if (save.stats_today === null) {
+			throw new Error("stats_today is null after ensure_today");
+		}
+		// Dedup: if this stem already in today's list, bail without re-firing.
+		if (save.stats_today.weak_stems_practiced_today.includes(stem_id)) {
+			return;
+		}
+		save.stats_today.weak_stems_practiced_today.push(stem_id);
+
+		if (save.daily_goals === null) {
+			throw new Error("daily_goals is null after ensure_today");
+		}
+		for (const prog of save.daily_goals.progress) {
+			if (prog.completed) continue;
+			if (prog.goal.id === "practice_weak_stem") {
+				prog.current = 1;
+				prog.completed = true;
+				newly_completed.push(prog.goal);
+			}
+		}
+	});
+
+	return { newly_completed };
 }
 
 //============================================

@@ -29,53 +29,36 @@ type LegacySaveFields = {
 		goals_completed_today?: number;
 		// Old field name pre-rename.
 		goal_rewards_granted?: number;
+		// Phase 1 v3 additions (may be missing on v2 saves).
+		shop_visited_today?: boolean;
+		session_start_theme?: string | null;
+		weak_stems_practiced_today?: string[];
 	} | null;
 	daily_goals?: {
 		completion_bonuses_awarded_today?: { three: boolean; five: boolean };
 	} | null;
+	// Phase 1 v3 addition (may be missing on v2 saves).
+	lessons_attempted_ever?: string[];
 };
 
-function migrate_to_v2(legacy: LegacySaveFields): void {
-	// v1 -> v2: drop defunct top-level fields. `muted` is intentionally dropped
-	// (no consumer remains); kids on old saves lose this preference silently.
-	if (legacy.best_score !== undefined) {
-		delete legacy.best_score;
-	}
-	if (legacy.muted !== undefined) {
-		delete legacy.muted;
-	}
-	// Seed lifetime_coins if old save predates it.
-	if (typeof legacy.lifetime_coins !== "number") {
-		legacy.lifetime_coins = 0;
-	}
-
-	// stats_today fixups: rename old field, seed new counters.
+function migrate_to_v3(legacy: LegacySaveFields): void {
+	// v2 -> v3: seed new daily-reset + lifetime tracker fields.
+	// Idempotent: re-running on a fresh v3 save is a no-op (fields already set).
 	const stats = legacy.stats_today;
 	if (stats) {
-		if (stats.goal_rewards_granted !== undefined) {
-			// Renamed; reset rather than copy stale count forward.
-			stats.goal_rewards_count_today = 0;
-			delete stats.goal_rewards_granted;
+		if (stats.shop_visited_today === undefined) {
+			stats.shop_visited_today = false;
 		}
-		// M2 fix: distinguish undefined from valid 0.
-		if (stats.goal_rewards_count_today === undefined) {
-			stats.goal_rewards_count_today = 0;
+		if (stats.session_start_theme === undefined) {
+			stats.session_start_theme = null;
 		}
-		// M1 fix: new persisted counter; seed at 0 for migrated saves.
-		if (stats.goals_completed_today === undefined) {
-			stats.goals_completed_today = 0;
+		if (stats.weak_stems_practiced_today === undefined) {
+			stats.weak_stems_practiced_today = [];
 		}
 	}
-
-	// daily_goals fixup: seed completion bonus tracker if missing.
-	const dg = legacy.daily_goals;
-	if (dg && !dg.completion_bonuses_awarded_today) {
-		dg.completion_bonuses_awarded_today = {
-			three: false,
-			five: false,
-		};
+	if (legacy.lessons_attempted_ever === undefined) {
+		legacy.lessons_attempted_ever = [];
 	}
-
 	legacy.version = SAVE_SCHEMA_VERSION;
 }
 
@@ -88,11 +71,15 @@ function read_raw(): SaveSchemaV1 {
 	// Single boundary cast: route the parsed JSON through the typed migration shape.
 	const legacy = parsed as LegacySaveFields;
 
-	// v1 -> v2 in-place migration (also covers fresh v2 saves: idempotent).
-	if (legacy.version === 1 || legacy.version === SAVE_SCHEMA_VERSION) {
-		migrate_to_v2(legacy);
+	// Migration chain. v1 saves are discarded (no migration path defined).
+	// v2 -> v3 in-place; fresh v3 saves pass through v3 idempotently.
+	if (legacy.version === 2) {
+		migrate_to_v3(legacy);
+	} else if (legacy.version === SAVE_SCHEMA_VERSION) {
+		// Idempotent: re-run v3 seeding so any missing v3 fields get defaults.
+		migrate_to_v3(legacy);
 	} else {
-		// Unknown / future / corrupt version: discard rather than half-migrate.
+		// Unknown / future / corrupt / v1: discard rather than half-migrate.
 		return default_save();
 	}
 

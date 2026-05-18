@@ -13,12 +13,16 @@ export type MasteryClass = "mastered" | "learning" | "weak" | "untried";
 export function record_answer_for_stem(
 	stem: Stem,
 	correct: boolean
-): { newly_mastered: boolean } {
+): { newly_mastered: boolean; was_weak_before: boolean } {
 	const key = mastery_key(stem.id);
 	let newly_mastered = false;
 
-	// Check if mastered BEFORE the update.
-	const was_mastered = classify_stem(stem) === "mastered";
+	// Capture classification BEFORE the mutate so daily-goal handlers
+	// (practice_weak_stem) can credit the kid for practicing what *was* weak
+	// rather than what the answer just upgraded.
+	const pre_class = classify_stem(stem);
+	const was_mastered = pre_class === "mastered";
+	const was_weak_before = pre_class === "weak";
 
 	mutate_save((save) => {
 		if (!save.mastery[key]) {
@@ -49,7 +53,7 @@ export function record_answer_for_stem(
 	const is_now_mastered = classify_stem(stem) === "mastered";
 	newly_mastered = !was_mastered && is_now_mastered;
 
-	return { newly_mastered };
+	return { newly_mastered, was_weak_before };
 }
 
 //============================================

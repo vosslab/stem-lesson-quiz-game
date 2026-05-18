@@ -3,6 +3,11 @@
 import type { Theme, ThemeId } from "./types/cosmetic";
 import { load_save, mutate_save } from "./persist";
 import * as coins from "./coins";
+import {
+	record_theme_equipped,
+	grant_goal_rewards,
+	check_and_grant_completion_bonuses,
+} from "./daily_goals";
 
 //============================================
 
@@ -128,4 +133,14 @@ export function equip_theme(id: ThemeId): void {
 
 	// Apply to DOM immediately.
 	document.body.setAttribute("data-theme", id);
+
+	// Daily-goal hook: record the equip. First call of the day captures the
+	// baseline (no completion). Subsequent calls with a different theme id
+	// complete use_different_theme. Safe to call on repeat equips of the same
+	// theme (no-op inside record_theme_equipped).
+	const { newly_completed } = record_theme_equipped(id);
+	if (newly_completed.length > 0) {
+		grant_goal_rewards(newly_completed);
+		check_and_grant_completion_bonuses();
+	}
 }
