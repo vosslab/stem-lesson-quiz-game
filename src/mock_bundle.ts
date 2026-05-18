@@ -1,5 +1,5 @@
-// Placeholder bundle for dev work before real M1 data lands.
-// Swapped out by src/data_loader.ts once data/stems_bundle.json exists.
+// Placeholder bundle used as fallback when data/stems_bundle.json fetch fails.
+// Serves as the permanent fallback for file:// and fetch-error scenarios.
 
 import type { Bundle, Lesson, Stem } from "./types/stem";
 import { toLessonId, toStemId } from "./brands";
@@ -39,6 +39,7 @@ const lesson_1_stems: Stem[] = [
 	build_stem(1, "hema", "blood", "hemorrhage", "a discharge of blood; bleeding"),
 	build_stem(1, "hydro", "water", "hydroplane", "a craft that glides on water; a seaplane"),
 	build_stem(1, "itis", "inflammation", "bronchitis", "chronic inflammation of the bronchial tubes"),
+	build_stem(1, "morph", "form", "morphology", "the study of the form and structure of organisms"),
 ];
 
 const lesson_2_stems: Stem[] = [
@@ -49,6 +50,7 @@ const lesson_2_stems: Stem[] = [
 	build_stem(2, "micro", "small", "microscope", "an instrument for viewing small things"),
 	build_stem(2, "auto", "self", "autograph", "a self-written signature"),
 	build_stem(2, "graph", "write", "telegraph", "a system for writing at a distance"),
+	build_stem(2, "scope", "view", "stethoscope", "an instrument used for listening to internal sounds"),
 ];
 
 const mock_lessons: Lesson[] = [

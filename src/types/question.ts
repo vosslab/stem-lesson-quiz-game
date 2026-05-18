@@ -25,6 +25,7 @@ export type RoundConfig = {
 	selected_lesson_numbers: number[];
 	endless: boolean;
 	target_question_count: number;
+	choices_per_question: number;
 };
 
 export type RoundState = {

@@ -30,11 +30,12 @@ export type SaveSchemaV1 = {
 	best_score: number;
 	best_streak: number;
 	lesson_selection: number[];
-	endless_mode: boolean;
+	last_mode_id: string | null;
 	daily_goals: DailyGoalsToday | null;
 	stats_today: StatsToday | null;
 	mastery: Record<string, MasteryCounters>;
 	muted: boolean;
+	last_choices_by_mode: Record<string, number>;
 };
 
 export function default_save(): SaveSchemaV1 {
@@ -46,11 +47,12 @@ export function default_save(): SaveSchemaV1 {
 		best_score: 0,
 		best_streak: 0,
 		lesson_selection: [1],
-		endless_mode: false,
+		last_mode_id: null,
 		daily_goals: null,
 		stats_today: null,
 		mastery: {},
 		muted: true,
+		last_choices_by_mode: {},
 	};
 	return fresh;
 }

@@ -1,2 +1,6 @@
 report_*.txt
 .DS_Store
+dist-single/
+dist/
+node_modules/
+package-lock.json

@@ -13,13 +13,18 @@ function read_raw(): SaveSchemaV1 {
 	if (raw === null) {
 		return default_save();
 	}
-	const parsed = JSON.parse(raw) as { version?: number };
+	const parsed = JSON.parse(raw) as { version?: number; last_choices_by_mode?: unknown };
 	if (parsed.version !== SAVE_SCHEMA_VERSION) {
 		// Schema drift: discard old save rather than half-migrate.
 		// Future versions add a migration switch here.
 		return default_save();
 	}
-	return parsed as SaveSchemaV1;
+	const save = parsed as SaveSchemaV1;
+	// Ensure last_choices_by_mode exists (migration path for old saves).
+	if (!save.last_choices_by_mode) {
+		save.last_choices_by_mode = {};
+	}
+	return save;
 }
 
 export function load_save(): SaveSchemaV1 {
@@ -41,9 +46,4 @@ export function mutate_save(mutator: (s: SaveSchemaV1) => void): void {
 	const save = load_save();
 	mutator(save);
 	save_now();
-}
-
-export function reset_save_for_tests(): void {
-	cached_save = null;
-	localStorage.removeItem(STORAGE_KEY);
 }

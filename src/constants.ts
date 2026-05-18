@@ -2,7 +2,8 @@
 // are one-file edits.
 
 export const ROUND_QUESTION_COUNT = 10;
-export const CHOICES_PER_QUESTION = 4;
+export const DEFAULT_CHOICES_PER_QUESTION = 4;
+export const CHOICES_OPTIONS = [4, 6, 8] as const;
 
 // Scoring
 export const POINTS_CORRECT = 10;
@@ -31,7 +32,7 @@ export const RETRY_QUEUE_RESURFACE_MAX = 5;
 
 // Feedback timing (ms)
 export const FEEDBACK_CORRECT_MS = 800;
-export const FEEDBACK_WRONG_MS = 1500;
+export const FEEDBACK_WRONG_MS = 1600;
 export const STREAK_BANNER_MS = 1200;
 
 // Storage

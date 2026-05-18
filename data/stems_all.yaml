@@ -476,11 +476,11 @@ lessons:
     meaning: send
     example_word: missile
     example_definition: capable of being thrown or projected to strike a distant object
-  - stem: osteoarthritis
-    meaning: a form of arthritis that is characterized by progressive degenerative
+  - stem: osteo
+    meaning: bone
+    example_word: osteoarthritis
+    example_definition: a form of arthritis that is characterized by progressive degenerative
       changes in the cartilage of one or more joints (as of the knees, hips, and hands)
-    example_word: osteo
-    example_definition: bone
 - lesson: 16
   stems:
   - stem: tude
