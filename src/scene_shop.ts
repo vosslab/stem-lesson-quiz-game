@@ -153,21 +153,10 @@ export function render_shop_screen(opts: ShopOpts): HTMLElement {
 						// Block bubbling to the card click handler so the
 						// card preview never fires from a Buy tap.
 						evt.stopPropagation();
-						// Snapshot the currently-equipped theme so a cancel
-						// (or any earlier tap-preview bleed) restores the
-						// kid's actual equipped look on dismissal.
-						const equipped_before = cosmetics.THEME_CATALOG.find(
-							(t) => cosmetics.is_equipped(t.id)
-						)?.id;
 						// Show confirmation modal so a stray tap does not
 						// drain coins on an accidental purchase.
 						const confirmed = await show_buy_confirmation(theme);
 						if (!confirmed) {
-							// Restore equipped theme preview after cancel
-							// to kill any prior shop-preview bleed.
-							if (equipped_before) {
-								document.body.setAttribute("data-theme", equipped_before);
-							}
 							return;
 						}
 						const result = cosmetics.purchase_theme(theme.id);
@@ -180,23 +169,17 @@ export function render_shop_screen(opts: ShopOpts): HTMLElement {
 
 			card.appendChild(button);
 
-			// Tap card to preview (touch-first)
+			// Preview is shown by the swatch element only (it has its own
+			// data-theme). We intentionally do NOT mutate document.body's
+			// data-theme on tap/hover: on touch devices mouseleave never
+			// fires, so a preview would stick and effectively equip an
+			// unowned theme. Card pulse on tap gives tactile feedback
+			// without re-skinning the whole UI.
 			card.addEventListener("click", (evt) => {
 				if (evt.target !== button) {
-					document.body.setAttribute("data-theme", theme.id);
-				}
-			});
-
-			// Hover preview effect (desktop bonus)
-			card.addEventListener("mouseenter", () => {
-				document.body.setAttribute("data-theme", theme.id);
-			});
-			card.addEventListener("mouseleave", () => {
-				const equipped_id = cosmetics.THEME_CATALOG.find((t) =>
-					cosmetics.is_equipped(t.id)
-				)?.id;
-				if (equipped_id) {
-					document.body.setAttribute("data-theme", equipped_id);
+					card.classList.remove("scene_shop_card_tapped");
+					void card.offsetWidth;
+					card.classList.add("scene_shop_card_tapped");
 				}
 			});
 

@@ -7,7 +7,7 @@
 // Share button builds emoji text + copies to clipboard.
 
 import type { Bundle, Stem } from "./types/stem";
-import { load_save } from "./persist";
+import { load_save, reset_save } from "./persist";
 import * as mastery from "./mastery";
 
 //============================================
@@ -177,6 +177,32 @@ export function render_mastery_screen(opts: MasteryOpts): HTMLElement {
 	footer.appendChild(goal_text);
 
 	container.appendChild(footer);
+
+	// Tucked-away "Reset save" escape hatch. Placed at the bottom of the
+	// mastery page (not home) so an accidental tap is unlikely. Used to
+	// recover kids stuck on a deploy with a broken localStorage blob.
+	const reset_row = document.createElement("div");
+	reset_row.classList.add("mastery-reset-row");
+
+	const reset_btn = document.createElement("button");
+	reset_btn.classList.add("mastery-reset-button");
+	reset_btn.textContent = "Reset save";
+	reset_btn.addEventListener("click", () => {
+		const ok = window.confirm(
+			"Reset save? This wipes coins, themes, mastery, and daily goals. This cannot be undone."
+		);
+		if (!ok) {
+			return;
+		}
+		const really = window.confirm("Are you really sure? Last chance.");
+		if (!really) {
+			return;
+		}
+		reset_save();
+		window.location.reload();
+	});
+	reset_row.appendChild(reset_btn);
+	container.appendChild(reset_row);
 
 	return container;
 }

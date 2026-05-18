@@ -2533,3 +2533,41 @@ body {
 		transform: scale(1);
 	}
 }
+
+/* Reset-save escape hatch on mastery page. Muted styling on purpose: */
+/* easy to find when needed, unattractive enough to discourage idle taps. */
+.mastery-reset-row {
+	display: flex;
+	justify-content: center;
+	margin-top: 32px;
+	padding-bottom: 24px;
+	opacity: 0.55;
+}
+
+.mastery-reset-button {
+	background: transparent;
+	color: #888;
+	border: 1px dashed #888;
+	border-radius: 6px;
+	padding: 6px 14px;
+	font-size: 12px;
+	letter-spacing: 0.04em;
+	cursor: pointer;
+}
+
+.mastery-reset-button:hover {
+	color: #c44;
+	border-color: #c44;
+	opacity: 1;
+}
+
+/* Tap-pulse feedback for shop cards (replaces previous body-theme preview). */
+.scene_shop_card_tapped {
+	animation: shop-card-tap 240ms ease-out;
+}
+
+@keyframes shop-card-tap {
+	0% { transform: scale(1); }
+	40% { transform: scale(1.04); }
+	100% { transform: scale(1); }
+}

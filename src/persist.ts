@@ -62,12 +62,40 @@ function migrate_to_v3(legacy: LegacySaveFields): void {
 	legacy.version = SAVE_SCHEMA_VERSION;
 }
 
+// Backfill top-level required fields that older saves predate. Each newer
+// schema bump added top-level keys (lifetime_coins, owned_themes, etc.). If a
+// migrated v2 save lacks them, downstream code like `save.lifetime_coins += x`
+// produces NaN that then persists. Seeding from default_save() heals the blob
+// without wiping the kid's coins, mastery, or owned themes.
+function backfill_top_level(legacy: LegacySaveFields): void {
+	const defaults = default_save();
+	const blob = legacy as unknown as Record<string, unknown>;
+	const defaults_blob = defaults as unknown as Record<string, unknown>;
+	for (const key of Object.keys(defaults_blob)) {
+		if (blob[key] === undefined || blob[key] === null) {
+			blob[key] = defaults_blob[key];
+		}
+	}
+}
+
 function read_raw(): SaveSchemaV1 {
 	const raw = localStorage.getItem(STORAGE_KEY);
 	if (raw === null) {
 		return default_save();
 	}
-	const parsed = JSON.parse(raw) as unknown;
+	// Defensive: any parse/migration failure on a stale or corrupt blob must
+	// not break boot. Falling back to default_save lets the app boot cleanly
+	// and the kid can keep playing. The 2-line try is the only one in this
+	// module and is justified by the boot-blocker risk.
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(raw);
+	} catch {
+		return default_save();
+	}
+	if (parsed === null || typeof parsed !== "object") {
+		return default_save();
+	}
 	// Single boundary cast: route the parsed JSON through the typed migration shape.
 	const legacy = parsed as LegacySaveFields;
 
@@ -83,7 +111,18 @@ function read_raw(): SaveSchemaV1 {
 		return default_save();
 	}
 
+	// Seed any top-level fields missing from older v2 saves before adopting.
+	backfill_top_level(legacy);
+
 	return legacy as unknown as SaveSchemaV1;
+}
+
+export function reset_save(): void {
+	// Hard reset: wipe persisted save and in-memory cache. Next load_save()
+	// returns a fresh default. Used by the home-screen "Reset save" button
+	// to recover kids stuck on a deploy with a broken localStorage blob.
+	localStorage.removeItem(STORAGE_KEY);
+	cached_save = null;
 }
 
 export function load_save(): SaveSchemaV1 {
