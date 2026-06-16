@@ -1,53 +1,109 @@
-# Usage
+# USAGE.md
 
-How to build, serve, and ship the stem-lesson-quiz-game. For in-game mechanics
-(modes, scoring, controls), see [GAME_USAGE.md](GAME_USAGE.md).
+How to run the tools in this repository.
 
-## Local development
+## reset_repo.py
+
+`reset_repo.py` is the bootstrap entry point for a new consumer repo cloned from this
+template. It runs an interactive interview (project type, code license, docs license,
+PyPI intent, stage, commit), writes the `REPO_TYPE` marker, installs license files,
+seeds `pyproject.toml` when PyPI is requested, runs propagation, and removes
+template-meta paths.
+
+### Normal use (interactive)
 
 ```bash
-./run_web_server.sh       # build + serve on a random port (8000-8999)
+source source_me.sh && python3 reset_repo.py
 ```
 
-Wraps `build_github_pages.sh` (typecheck + esbuild bundle) and then starts
-`http-server` against `dist/`. Each session picks a random port (printed to
-stdout, e.g. `http://localhost:8517/`). The random port doubles as a
-cache-buster so the browser does not serve stale JS/CSS from a prior session.
-Override with `PORT=8123 ./run_web_server.sh` for a stable URL.
+The script interviews you in your terminal. No flags are required for normal use.
 
-## Build artifacts
+### CLI flags
 
-- `dist/` -- canonical GitHub Pages build (`index.html`, `main.js`,
-  `style.css`, `stems_bundle.json`, `.nojekyll`). Produced by
-  `build_github_pages.sh`.
-- `dist-single/stems_quiz.html` -- portable single-file HTML (CSS, JS, and
-  the JSON data bundle inlined). Produced by `export_single_file.sh` via
-  `tools/inline_single_file.py`.
-- `dist_clean.sh` removes both `dist/` and `dist-single/`.
+| Flag | Description |
+| --- | --- |
+| `--config <file>` | Supply interview answers from a JSON file (testing/reproducibility mode) |
+| `--dry-run` | Log planned actions without writing any files |
+| `-h` | Show help and exit |
 
-Hard rule from `build_github_pages.sh`: the GitHub Pages build must not
-produce single-file output. Use `export_single_file.sh` for the portable
-artifact instead.
+### Config mode (testing/reproducibility interface)
 
-## Data pipeline
+`--config` is intended for automated testing and reproducible resets, not for
+routine human use. Pass a JSON file with the interview answers:
 
-- `artifacts/Stems_Lesson_NN.pdf` -- source PDFs (one per lesson).
-- `tools/extract_stems.py` -- converts PDFs into per-lesson YAML under
-  `data/stems/`.
-- `data/stems_all.yaml` -- aggregate YAML view.
-- `tools/yaml_to_json.py` -- regenerates `data/stems_bundle.json`, asserting
-  20 lessons and 140 stems.
+```bash
+source source_me.sh && python3 reset_repo.py --config my_config.json
+```
 
-## Tests
+Config mode is non-interactive: the script reads answers from the file and proceeds
+without prompting. This replaces the interactive interview for the run.
 
-- `pytest tests/` -- fast Python suite (lint, ASCII, markdown links,
-  `tests/test_stems_data.py` schema checks).
-- `./check_codebase.sh` -- TypeScript typecheck plus Playwright smoke under
-  [tests/playwright/](../tests/playwright).
-- E2E conventions live in [E2E_TESTS.md](E2E_TESTS.md) and
-  [PLAYWRIGHT_USAGE.md](PLAYWRIGHT_USAGE.md).
+#### JSON schema
 
-## Known gaps
+| Key | Required | Values | Notes |
+| --- | --- | --- | --- |
+| `project_type` | YES | `python` / `p`, `typescript` / `t`, `rust` / `r`, `other` / `o` | Short alias or full token |
+| `code_license` | YES | SPDX identifier or alias (e.g. `MIT`, `m`, `GPL-3.0`, `g`) | Resolved via `resolve_license` |
+| `docs_license` | no | SPDX identifier or alias | Default: `CC-BY-4.0` |
+| `pypi` | no | `true` / `false` | Default: `false`; Python-only |
+| `stage` | no | `true` / `false` | Default: `true` |
+| `commit` | no | `true` / `false` | Default: `false` |
 
-- Cross-link release process to `docs/RELEASE_HISTORY.md` once that doc is
-  created.
+#### Minimal example
+
+```json
+{
+  "project_type": "python",
+  "code_license": "GPL-3.0"
+}
+```
+
+#### Full example
+
+```json
+{
+  "project_type": "typescript",
+  "code_license": "MIT",
+  "docs_license": "CC-BY-4.0",
+  "stage": false,
+  "commit": false
+}
+```
+
+### Folder-name guard
+
+The script refuses to run when the repo root directory is named exactly
+`starter-repo-template`. This protects the template development checkout from
+accidental destruction.
+
+If you see this error, clone or rename the repo to your project name first:
+
+```
+This repo is named starter-repo-template. Clone or rename it to the consumer project name before running reset.
+```
+
+The guard checks the folder name only; it does not inspect remotes or origin URLs.
+
+### Outside a git repo
+
+Running `reset_repo.py` outside a git repository exits with a clear message
+instead of a raw subprocess traceback.
+
+## E2E test harness
+
+For the clone-based reset E2E harness (LOCAL and REMOTE modes), see
+[E2E_TESTS.md](E2E_TESTS.md) and the inline documentation in
+`tests/meta/e2e/e2e_reset_routing.py`. The harness is template-meta:
+it lives under `tests/meta/e2e/` and is removed by reset.
+
+Run all offline E2E tests:
+
+```bash
+bash tests/meta/e2e/run_all.sh
+```
+
+Run a single E2E test:
+
+```bash
+source source_me.sh && python3 tests/meta/e2e/e2e_reset_routing.py
+```

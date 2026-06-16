@@ -1,38 +1,38 @@
 {
-  "devDependencies": {
-    "@playwright/test": "^1.60.0",
-    "@types/node": "^25.8.0",
-    "esbuild": "^0.28.0",
-    "eslint": "^10.4.0",
-    "http-server": "^14.1.1",
-    "prettier": "^3.8.3",
-    "typescript": "^6.0.3"
-  },
-  "name": "stem-lesson-quiz-game",
-  "version": "1.0.0",
-  "description": "TypeScript browser quiz game for learning word stems.",
-  "private": true,
-  "directories": {
-    "doc": "docs",
-    "test": "tests"
-  },
-  "dependencies": {
-    "playwright": "^1.60.0",
-    "playwright-core": "^1.60.0"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/vosslab/stem-lesson-quiz-game.git"
-  },
-  "keywords": [],
-  "author": "Neil Voss",
-  "license": "LGPL-3.0-or-later",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/vosslab/stem-lesson-quiz-game/issues"
-  },
-  "homepage": "https://github.com/vosslab/stem-lesson-quiz-game#readme"
+	"devDependencies": {
+		"@playwright/test": ">=1.61.0",
+		"@types/node": ">=25.9.3",
+		"esbuild": ">=0.28.1",
+		"eslint": ">=10.5.0",
+		"http-server": ">=14.1.1",
+		"prettier": ">=3.8.4",
+		"typescript": ">=6.0.3"
+	},
+	"name": "stem-lesson-quiz-game",
+	"version": "1.0.0",
+	"description": "TypeScript browser quiz game for learning word stems.",
+	"private": true,
+	"directories": {
+		"doc": "docs",
+		"test": "tests"
+	},
+	"dependencies": {
+		"playwright": ">=1.61.0",
+		"playwright-core": ">=1.61.0"
+	},
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/vosslab/stem-lesson-quiz-game.git"
+	},
+	"keywords": [],
+	"author": "Neil Voss",
+	"license": "LGPL-3.0-or-later",
+	"type": "commonjs",
+	"bugs": {
+		"url": "https://github.com/vosslab/stem-lesson-quiz-game/issues"
+	},
+	"homepage": "https://github.com/vosslab/stem-lesson-quiz-game#readme"
 }

@@ -6,7 +6,7 @@ End-to-end (E2E) testing conventions for this repo.
 
 This repo supports two distinct E2E execution models, each with its own folder:
 
-- `tests/playwright/` (and optional `tests/playwright/e2e/` sub-grouping) - **browser-based E2E**: full Playwright walkthroughs and browser-driven tests. The deep dive lives in [PLAYWRIGHT_USAGE.md](PLAYWRIGHT_USAGE.md).
+- `tests/playwright/` (and optional `tests/playwright/e2e/` sub-grouping) - **browser-based E2E**: full Playwright walkthroughs and browser-driven tests. TypeScript repos include `PLAYWRIGHT_USAGE.md` in their propagated `docs/` folder.
 - `tests/e2e/` - **non-browser E2E**: shell/Python orchestration for whole-system testing: CLIs, builds, services, multi-suite coordination. This doc focuses on the non-browser model.
 
 Both are excluded from `pytest tests/` via `collect_ignore = ["e2e", "playwright"]` in `tests/conftest.py`.
@@ -17,7 +17,7 @@ This repo organizes tests in four tiers, all under the `tests/` umbrella:
 
 - `tests/test_*.py` - fast pytest unit and integration tests. Run with `pytest tests/`.
 - `tests/test_*.mjs` - pure Node tests, if any (rare; not browser-driven).
-- `tests/playwright/` (with optional `tests/playwright/e2e/` subfolder) - browser-driven Playwright tests. See [PLAYWRIGHT_USAGE.md](PLAYWRIGHT_USAGE.md).
+- `tests/playwright/` (with optional `tests/playwright/e2e/` subfolder) - browser-driven Playwright tests. TypeScript repos include `PLAYWRIGHT_USAGE.md` in their propagated `docs/` folder.
 - `tests/e2e/` - non-browser whole-system E2E. Shell/Python orchestration (`e2e_*.sh`, `e2e_*.py`). Run directly, not via pytest.
 
 ## Why tests/e2e/ is excluded from pytest
@@ -53,12 +53,13 @@ the `e2e_*` prefix as a secondary, human-readable convention.
 - Run a single Python runner: `source source_me.sh && python3 tests/e2e/e2e_<name>.py`.
 - Run all E2E tests: provide a `tests/e2e/run_all.sh` that iterates over the
   `e2e_*` files and reports pass/fail for each.
-- For browser-driven Playwright runs, see [PLAYWRIGHT_USAGE.md](PLAYWRIGHT_USAGE.md).
+- For browser-driven Playwright runs, TypeScript repos include `PLAYWRIGHT_USAGE.md` in their propagated `docs/` folder.
 - Do not invoke E2E tests from `pytest tests/`. Keep the two suites separate.
 
 ## Naming conventions test
 
-File naming conventions are enforced by `tests/test_test_naming_conventions.py` to prevent silent bugs:
+File naming conventions are enforced by `templates/typescript/tests/test_test_naming_conventions.py`
+(ships only to `REPO_TYPE=typescript` consumer repos) to prevent silent bugs:
 
 - No `test_*.py` files anywhere under `tests/e2e/` (since `collect_ignore` would skip them silently, mismatching the name).
 - No `test_*.py` files anywhere under `tests/playwright/` (same trap).
@@ -90,9 +91,62 @@ File naming conventions are enforced by `tests/test_test_naming_conventions.py` 
 - Prefer explicit exit codes and clear stderr messages so a failing E2E run
   is easy to diagnose without reading the script.
 
+## Clone-based reset harness (starter-repo-template only, template-meta)
+
+`tests/meta/e2e/e2e_reset_routing.py` is the E2E harness for `reset_repo.py`.
+It is template-meta: it lives under `tests/meta/e2e/` so it never propagates
+to consumer repos and is removed by `reset_repo.py` during a reset.
+
+The harness uses `git clone` to create an isolated consumer-named directory
+under `/tmp` for each test case, runs reset from a per-case ephemeral JSON
+config file, and verifies the result against the live propagation engine plus
+reset-specific anchor checks.
+
+### Two modes
+
+| Mode | Command | Network | What it clones |
+| --- | --- | --- | --- |
+| LOCAL (default) | `python3 tests/meta/e2e/e2e_reset_routing.py` | offline | Local committed history via `git clone <repo_root>` into `/tmp` |
+| REMOTE | `python3 tests/meta/e2e/e2e_reset_routing.py remote` | required | GitHub HTTPS clone (read-only); exercises what a consumer receives from origin/main |
+
+Run LOCAL to stay offline during development. Run REMOTE only when you want to
+validate the full push-to-origin flow.
+
+### LOCAL mode notes
+
+- Clones committed history only. Uncommitted working-tree changes are not
+  exercised. Commit any changes you want the harness to see before running LOCAL.
+- Entirely offline; no network access required.
+- Each test case clones into a consumer-named directory under `/tmp`
+  (e.g. `/tmp/my_project_python/`), so cases are isolated and ephemeral.
+
+### REMOTE mode notes
+
+- Requires network access to GitHub HTTPS.
+- Push-before-test consequence: the harness only clones from the GitHub HTTPS URL
+  (read-only). It never pushes. Any new code (e.g. `reset_repo.py --config`) must
+  be pushed to origin/main by the human first; REMOTE mode clones whatever is
+  already there.
+- Validates that a fresh clone from origin/main behaves correctly after reset.
+
+### Run all offline E2E tests
+
+`tests/meta/e2e/run_all.sh` iterates over every `e2e_*` script under
+`tests/meta/e2e/` and reports pass/fail for each. This runner is also
+template-meta (never propagates; removed by reset).
+
+```bash
+bash tests/meta/e2e/run_all.sh
+```
+
+This runner is offline (LOCAL mode only). It does not invoke REMOTE mode
+automatically. See [USAGE.md](USAGE.md) for individual run commands.
+
 ## Related docs
 
 - [PYTEST_STYLE.md](PYTEST_STYLE.md): fast pytest unit and integration tests under `tests/`.
-- [PLAYWRIGHT_USAGE.md](PLAYWRIGHT_USAGE.md): browser-tier deep dive for Playwright tests under `tests/playwright/`.
+- Browser-driven test conventions: TypeScript repos include `PLAYWRIGHT_USAGE.md` in their propagated `docs/` folder for tests under `tests/playwright/`.
 - [PYTHON_STYLE.md](PYTHON_STYLE.md): repo-wide Python rules, including
   the `assert`-only-in-tests boundary.
+- [USAGE.md](USAGE.md): how to run `reset_repo.py` including `--config` mode and
+  the E2E harness commands.

@@ -7,3 +7,18 @@ node_modules/
 test-results/
 screenshots/theme-matrix/
 output_screenshots/
+
+# === UNIVERSAL ===
+_temp*.?*
+# === TYPESCRIPT ===
+_site/
+*.tsbuildinfo
+.eslintcache
+.prettiercache
+playwright-report/
+blob-report/
+coverage/
+meta.json
+stats.html
+
+
