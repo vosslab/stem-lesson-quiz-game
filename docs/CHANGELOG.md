@@ -16,41 +16,51 @@
 
 ### Fixes and Maintenance
 
-**Docset refresh pass (docset-updater).** Refreshed the full doc set from current repo evidence:
-`docs/CODE_ARCHITECTURE.md`, `docs/FILE_STRUCTURE.md`, `docs/INSTALL.md`, `docs/USAGE.md`,
-`docs/RELATED_PROJECTS.md`, `docs/RELEASE_HISTORY.md`, `docs/NEWS.md`, `README.md`, and `AGENTS.md`
-(trimmed to a bare-path pointer file). All owned by their per-doc skills.
-
-**Fixed six broken Markdown links flagged by `tests/test_markdown_links.py`.** `docs/INSTALL.md` and
-`docs/USAGE.md` linked an untracked stray `deploy-pages.yml`; repointed both to the real workflow
-[.github/workflows/pages.yml](../.github/workflows/pages.yml) and corrected the stated CI Node
-version (22, not 24) and workflow name (`Deploy Pages`). Fixed path-like link-text mismatches in
-`docs/CODE_ARCHITECTURE.md` and `docs/FILE_STRUCTURE.md`, and redundant `../docs/` traversal in
-`docs/FILE_STRUCTURE.md`. `pytest tests/test_markdown_links.py`: 30 passed.
-
-**Unblocked the `lint` gate (CommonJS-vs-ESM + missing eslint deps).** `check_codebase.sh` step 3
-failed because `package.json` declared `"type": "commonjs"` while the canonical (propagated)
-`eslint.config.js` and `eslint.config.local.js` are ESM (`import`/`export default`) -- Node loaded
-the config as CJS and threw `SyntaxError: Cannot use import statement outside a module`. The repo is
-ESM throughout (`tsconfig` `module: esnext`, tools are `.mjs`, `<script type="module">`), so flipped
-`package.json` to `"type": "module"`. Also declared the three devDependencies the canonical config
-imports but this repo was missing: `@eslint/js` (>=10.0.1), `globals` (>=17.7.0), and
-`typescript-eslint` (>=8.62.1); ran `devel/setup_typescript.sh` to install. Did not edit
-`eslint.config.js` (propagated, overwritten each run per `docs/TYPESCRIPT_STYLE.md`).
-
-**Fixed 22 real ESLint errors surfaced once the config loaded.** 7 auto-fixed (`prefer-const`,
-`no-unnecessary-type-assertion`, `prefer-as-const`). 15 fixed by hand: floating/misused promises
-wrapped with `void` (`src/init.ts`, `src/scene_mastery.ts`, `src/scene_shop.ts`), explicit `: void`
-/ `: Promise<void>` return types added, dead `no-useless-assignment` initializers removed
-(`src/init.ts`, `src/mastery.ts`, `src/daily_goals.ts`), unused imports/args dropped in the
-Playwright test helpers. Restored two `HTMLButtonElement` narrowings in `src/ui_rendering.ts` that
-`--fix` wrongly stripped, using typed `querySelector<HTMLButtonElement>` so both tsc and ESLint pass.
-Gate now green: 5 checks pass, 747 pytests pass, `dist/main.js` builds at 52.6kb.
+- Docset refresh pass (docset-updater): refreshed the full doc set from current repo evidence --
+  `docs/CODE_ARCHITECTURE.md`, `docs/FILE_STRUCTURE.md`, `docs/INSTALL.md`, `docs/USAGE.md`,
+  `docs/RELATED_PROJECTS.md`, `docs/RELEASE_HISTORY.md`, `docs/NEWS.md`, `README.md`, and `AGENTS.md`
+  (trimmed to a bare-path pointer file). All owned by their per-doc skills.
+- Fixed six broken Markdown links flagged by `tests/test_markdown_links.py`: `docs/INSTALL.md` and
+  `docs/USAGE.md` linked an untracked stray `deploy-pages.yml`; repointed both to the real workflow
+  [.github/workflows/pages.yml](../.github/workflows/pages.yml) and corrected the stated CI Node
+  version (22, not 24) and workflow name (`Deploy Pages`). Also fixed path-like link-text mismatches
+  in `docs/CODE_ARCHITECTURE.md` and `docs/FILE_STRUCTURE.md`, and redundant `../docs/` traversal in
+  `docs/FILE_STRUCTURE.md`. `pytest tests/test_markdown_links.py`: 30 passed.
+- Unblocked the `lint` gate (CommonJS-vs-ESM + missing eslint deps): `check_codebase.sh` step 3
+  failed because `package.json` declared `"type": "commonjs"` while the canonical (propagated)
+  `eslint.config.js` and `eslint.config.local.js` are ESM (`import`/`export default`), so Node loaded
+  the config as CJS and threw `SyntaxError: Cannot use import statement outside a module`. The repo is
+  ESM throughout (`tsconfig` `module: esnext`, tools are `.mjs`, `<script type="module">`), so flipped
+  `package.json` to `"type": "module"`. Also declared the three devDependencies the canonical config
+  imports but this repo was missing: `@eslint/js` (>=10.0.1), `globals` (>=17.7.0), and
+  `typescript-eslint` (>=8.62.1); ran `devel/setup_typescript.sh` to install. Did not edit
+  `eslint.config.js` (propagated, overwritten each run per `docs/TYPESCRIPT_STYLE.md`).
+- Fixed 22 real ESLint errors surfaced once the config loaded: 7 auto-fixed (`prefer-const`,
+  `no-unnecessary-type-assertion`, `prefer-as-const`); 15 fixed by hand -- floating/misused promises
+  wrapped with `void` (`src/init.ts`, `src/scene_mastery.ts`, `src/scene_shop.ts`), explicit `: void`
+  / `: Promise<void>` return types added, dead `no-useless-assignment` initializers removed
+  (`src/init.ts`, `src/mastery.ts`, `src/daily_goals.ts`), and unused imports/args dropped in the
+  Playwright test helpers. Restored two `HTMLButtonElement` narrowings in `src/ui_rendering.ts` that
+  `--fix` wrongly stripped, using typed `querySelector<HTMLButtonElement>` so both tsc and ESLint
+  pass. Gate now green: 5 checks pass, 747 pytests pass, `dist/main.js` builds at 52.6kb.
 
 ### Removals and Deprecations
 
 - Removed the root `dist_clean.sh`; both cleaners now live only under `devel/`
   (`devel/clean_build.sh` light, `devel/dist_clean.sh` deep).
+
+### Developer Tests and Notes
+
+- Added the first `node --test` unit coverage for pure game logic. `check_codebase.sh` step 6
+  (`test:node`) had always SKIPped because no `tests/test_*.mjs` files existed -- game logic had zero
+  unit coverage, only Playwright browser smokes and pytest lint/schema checks. Added
+  [tests/test_scoring.mjs](../tests/test_scoring.mjs) (round streak counters in `src/scoring.ts`:
+  `apply_correct`/`apply_wrong`, longest-streak tracking, reset-on-miss) and
+  [tests/test_distractor_score.mjs](../tests/test_distractor_score.mjs) (the deterministic
+  `confusability_score` in `src/distractor_score.ts`, both directions, with hand-computed exact
+  scores). Both import `.ts` source through the `--import tsx` loader. 10 tests, all green; the gate
+  now runs `test:node` instead of skipping it. Targeted the two fully pure modules first; scene and
+  persistence modules that touch `localStorage`/DOM are left for a browser-context harness.
 
 ## 2026-07-01
 
