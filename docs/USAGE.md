@@ -1,109 +1,111 @@
-# USAGE.md
+# Usage
 
-How to run the tools in this repository.
+How to build, serve, check, export, and regenerate data for the
+stem-lesson-quiz-game browser game. For gameplay (modes, controls, screens),
+see [GAME_USAGE.md](GAME_USAGE.md). For setup and dependencies, see
+[INSTALL.md](INSTALL.md).
 
-## reset_repo.py
+Every workflow is a front-door shell script at the repo root; the matching
+`npm run` alias just points back at the same script. Run either form.
 
-`reset_repo.py` is the bootstrap entry point for a new consumer repo cloned from this
-template. It runs an interactive interview (project type, code license, docs license,
-PyPI intent, stage, commit), writes the `REPO_TYPE` marker, installs license files,
-seeds `pyproject.toml` when PyPI is requested, runs propagation, and removes
-template-meta paths.
-
-### Normal use (interactive)
+## Quick start
 
 ```bash
-source source_me.sh && python3 reset_repo.py
+./setup_game.sh           # one-time: npm install + initial build
+./run_web_server.sh       # build dist/, then serve it on a random port
 ```
 
-The script interviews you in your terminal. No flags are required for normal use.
-
-### CLI flags
-
-| Flag | Description |
-| --- | --- |
-| `--config <file>` | Supply interview answers from a JSON file (testing/reproducibility mode) |
-| `--dry-run` | Log planned actions without writing any files |
-| `-h` | Show help and exit |
-
-### Config mode (testing/reproducibility interface)
-
-`--config` is intended for automated testing and reproducible resets, not for
-routine human use. Pass a JSON file with the interview answers:
+`run_web_server.sh` builds `dist/`, prints the chosen URL (random port in
+8000-8999, e.g. `http://localhost:8517/`), and opens a browser when
+interactive. Override the port for a stable URL:
 
 ```bash
-source source_me.sh && python3 reset_repo.py --config my_config.json
+PORT=8123 ./run_web_server.sh
 ```
 
-Config mode is non-interactive: the script reads answers from the file and proceeds
-without prompting. This replaces the interactive interview for the run.
+## Scripts
 
-#### JSON schema
+| Script | npm alias | What it does |
+| --- | --- | --- |
+| `./run_web_server.sh` | `npm run serve` | Build `dist/` and serve it locally |
+| `./build_github_pages.sh` | `npm run build` | Produce the GitHub Pages `dist/` artifact |
+| `./check_codebase.sh` | `npm run check` | Typecheck, lint, format-check, Node unit tests |
+| `./setup_game.sh` | `npm run setup` | Install npm deps and run the first build |
+| `./export_single_file.sh` | none | Portable one-file HTML build |
+| `./run_playwright_tests.sh` | none | Playwright browser smoke tests |
+| `./devel/clean_build.sh` | `npm run clean` | Remove build output and caches, keep `node_modules` |
 
-| Key | Required | Values | Notes |
-| --- | --- | --- | --- |
-| `project_type` | YES | `python` / `p`, `typescript` / `t`, `rust` / `r`, `other` / `o` | Short alias or full token |
-| `code_license` | YES | SPDX identifier or alias (e.g. `MIT`, `m`, `GPL-3.0`, `g`) | Resolved via `resolve_license` |
-| `docs_license` | no | SPDX identifier or alias | Default: `CC-BY-4.0` |
-| `pypi` | no | `true` / `false` | Default: `false`; Python-only |
-| `stage` | no | `true` / `false` | Default: `true` |
-| `commit` | no | `true` / `false` | Default: `false` |
+## Build
 
-#### Minimal example
+`build_github_pages.sh` is the canonical production build:
 
-```json
-{
-  "project_type": "python",
-  "code_license": "GPL-3.0"
-}
-```
+- Wipes and recreates `dist/` from scratch.
+- Regenerates `data/stems_bundle.json` from YAML (via `tools/yaml_to_json.py`).
+- Typechecks with `tsc --noEmit -p src/tsconfig.json`.
+- Bundles `src/init.ts` into `dist/main.js` with esbuild (ESM, minified).
+- Copies `src/index.html`, `src/style.css`, and the JSON bundle into `dist/`.
+- Writes `dist/.nojekyll` so GitHub Pages serves `_`-prefixed files.
 
-#### Full example
-
-```json
-{
-  "project_type": "typescript",
-  "code_license": "MIT",
-  "docs_license": "CC-BY-4.0",
-  "stage": false,
-  "commit": false
-}
-```
-
-### Folder-name guard
-
-The script refuses to run when the repo root directory is named exactly
-`starter-repo-template`. This protects the template development checkout from
-accidental destruction.
-
-If you see this error, clone or rename the repo to your project name first:
-
-```
-This repo is named starter-repo-template. Clone or rename it to the consumer project name before running reset.
-```
-
-The guard checks the folder name only; it does not inspect remotes or origin URLs.
-
-### Outside a git repo
-
-Running `reset_repo.py` outside a git repository exits with a clear message
-instead of a raw subprocess traceback.
-
-## E2E test harness
-
-For the clone-based reset E2E harness (LOCAL and REMOTE modes), see
-[E2E_TESTS.md](E2E_TESTS.md) and the inline documentation in
-`tests/meta/e2e/e2e_reset_routing.py`. The harness is template-meta:
-it lives under `tests/meta/e2e/` and is removed by reset.
-
-Run all offline E2E tests:
+This build never produces single-file output. For a portable one-file build,
+use `export_single_file.sh`, which writes `dist-single/stems_quiz.html` (set
+`OUTDIR` to change the target). Open it directly:
 
 ```bash
-bash tests/meta/e2e/run_all.sh
+./export_single_file.sh
+open dist-single/stems_quiz.html
 ```
 
-Run a single E2E test:
+## Checks and tests
 
 ```bash
-source source_me.sh && python3 tests/meta/e2e/e2e_reset_routing.py
+./check_codebase.sh       # typecheck + lint + prettier --check + Node unit tests
+pytest tests/             # fast Python pytest suite (data + repo lint)
+./run_playwright_tests.sh # browser smoke tests (rebuilds dist/ if missing)
 ```
+
+`check_codebase.sh` runs each step directly (`npx tsc`, `npx eslint`,
+`npx prettier`, `node --test`) and prints a PASS/FAIL/SKIP summary. It does not
+build `dist/` and does not run Playwright. `run_playwright_tests.sh` accepts
+`--build` to force a rebuild and forwards remaining arguments to
+`npx playwright test`. See [PLAYWRIGHT_USAGE.md](PLAYWRIGHT_USAGE.md) for the
+browser suite and [E2E_TESTS.md](E2E_TESTS.md) for test conventions.
+
+## Data pipeline
+
+The game loads `data/stems_bundle.json`, generated from per-lesson YAML.
+
+```bash
+source source_me.sh && python3 tools/extract_stems.py   # PDFs  -> data/stems/*.yaml
+source source_me.sh && python3 tools/yaml_to_json.py    # YAML  -> data/stems_bundle.json
+```
+
+- `tools/extract_stems.py` reads `artifacts/Stems_Lesson_NN.pdf`
+  (`-i/--input-dir`, default `artifacts`) and writes per-lesson YAML
+  (`-o/--output-dir`, default `data/stems`).
+- `tools/yaml_to_json.py` reads `data/stems/lesson_NN.yaml` (`-i/--input-dir`)
+  and writes `data/stems_bundle.json` (`-o/--output`) plus the combined
+  `data/stems_all.yaml` (`--all-yaml`). The build runs this step
+  automatically; run it by hand only after editing lesson YAML.
+
+## Inputs and outputs
+
+- Inputs: `artifacts/*.pdf` (source lessons), `data/stems/*.yaml` (per-lesson
+  stems), `src/` (TypeScript game source).
+- Outputs: `data/stems_bundle.json` (runtime data), `dist/` (GitHub Pages
+  artifact), `dist-single/stems_quiz.html` (portable build). All three are
+  generated and gitignored.
+
+## Deploy
+
+Pushing to `main` runs the `Deploy Pages` workflow
+([.github/workflows/pages.yml](../.github/workflows/pages.yml)): it installs npm deps, runs
+`build_github_pages.sh` on Node 22, and publishes `dist/` to GitHub Pages.
+
+`clean_build.sh` wipes `dist/`, `dist-single/`, tool caches, and test outputs
+but keeps `node_modules` and `package-lock.json`. For a full reset that also
+removes `node_modules`, use `devel/dist_clean.sh`.
+
+## Known gaps
+
+- Verify `tools/extract_stems.py` flags against the current PDF layout when
+  lesson PDFs change.

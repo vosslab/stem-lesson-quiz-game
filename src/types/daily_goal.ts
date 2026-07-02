@@ -7,20 +7,20 @@ import type { RoundState } from "./question";
 import type { SaveSchemaV1 } from "./save";
 
 export type GoalId =
-	| "answer_10"
-	| "five_in_a_row"
-	| "play_5_minutes"
-	| "master_new_stem"
-	| "try_new_lesson"
-	| "finish_quick_run"
-	| "finish_challenge_run"
-	| "accuracy_80"
-	| "flawless_10"
-	| "beat_streak"
-	| "practice_weak_stem"
-	| "master_3_stems"
-	| "use_different_theme"
-	| "visit_shop";
+  | "answer_10"
+  | "five_in_a_row"
+  | "play_5_minutes"
+  | "master_new_stem"
+  | "try_new_lesson"
+  | "finish_quick_run"
+  | "finish_challenge_run"
+  | "accuracy_80"
+  | "flawless_10"
+  | "beat_streak"
+  | "practice_weak_stem"
+  | "master_3_stems"
+  | "use_different_theme"
+  | "visit_shop";
 
 export type GoalTier = "easy" | "medium" | "hard";
 
@@ -28,14 +28,14 @@ export type GoalTier = "easy" | "medium" | "hard";
 // Adding a new event kind here forces every GoalDefinition.handle to either
 // react or explicitly ignore -- the TS compiler narrows on event.kind.
 export type GameEvent =
-	| { kind: "answer"; was_correct: boolean; current_streak: number }
-	| { kind: "play_seconds"; seconds: number }
-	| { kind: "master_stem" }
-	| { kind: "round_end"; round: RoundState }
-	| { kind: "shop_visit" }
-	| { kind: "theme_equipped"; theme_id: ThemeId }
-	| { kind: "lesson_attempted"; lesson_ids: LessonId[] }
-	| { kind: "weak_stem_practiced"; stem_id: StemId };
+  | { kind: "answer"; was_correct: boolean; current_streak: number }
+  | { kind: "play_seconds"; seconds: number }
+  | { kind: "master_stem" }
+  | { kind: "round_end"; round: RoundState }
+  | { kind: "shop_visit" }
+  | { kind: "theme_equipped"; theme_id: ThemeId }
+  | { kind: "lesson_attempted"; lesson_ids: LessonId[] }
+  | { kind: "weak_stem_practiced"; stem_id: StemId };
 
 // A goal owns its full lifecycle: display text, target, reward, AND the
 // handler that turns an incoming GameEvent into a new prog.current value.
@@ -47,16 +47,12 @@ export type GameEvent =
 // pool entry MUST supply handle. A new GoalId added without a handler is
 // a compile error, not a silent runtime no-op.
 export type GoalDefinition = {
-	id: GoalId;
-	display_text: string;
-	target: number;
-	reward_coins: number;
-	tier: GoalTier;
-	handle: (
-		event: GameEvent,
-		prog: DailyGoalProgress,
-		save: SaveSchemaV1
-	) => number;
+  id: GoalId;
+  display_text: string;
+  target: number;
+  reward_coins: number;
+  tier: GoalTier;
+  handle: (event: GameEvent, prog: DailyGoalProgress, save: SaveSchemaV1) => number;
 };
 
 // Back-compat alias. Existing callers that imported DailyGoal for the
@@ -65,16 +61,16 @@ export type GoalDefinition = {
 export type DailyGoal = GoalDefinition;
 
 export type DailyGoalProgress = {
-	goal: GoalDefinition;
-	current: number;
-	completed: boolean;
+  goal: GoalDefinition;
+  current: number;
+  completed: boolean;
 };
 
 export type DailyGoalsToday = {
-	date: string;
-	progress: DailyGoalProgress[];
-	completion_bonuses_awarded_today: {
-		three: boolean;
-		five: boolean;
-	};
+  date: string;
+  progress: DailyGoalProgress[];
+  completion_bonuses_awarded_today: {
+    three: boolean;
+    five: boolean;
+  };
 };

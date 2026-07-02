@@ -8,9 +8,9 @@ import os
 import pytest
 import yaml
 
-import git_file_utils
+import file_utils
 
-REPO_ROOT = git_file_utils.get_repo_root()
+REPO_ROOT = file_utils.get_repo_root()
 STEMS_DIR = os.path.join(REPO_ROOT, 'data', 'stems')
 
 #============================================

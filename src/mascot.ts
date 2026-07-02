@@ -107,20 +107,20 @@ const MASCOT_SVG = `
 
 // Insert inline SVG mascot into parent element.
 export function mount_mascot(parent: HTMLElement): HTMLElement {
-	const wrapper = document.createElement("div");
-	wrapper.className = "mascot-wrapper";
-	wrapper.setAttribute("data-state", "idle");
-	const parser = new DOMParser();
-	const svgDoc = parser.parseFromString(MASCOT_SVG, "image/svg+xml");
-	const svgElement = svgDoc.documentElement;
-	wrapper.appendChild(svgElement);
-	parent.appendChild(wrapper);
-	return wrapper;
+  const wrapper = document.createElement("div");
+  wrapper.className = "mascot-wrapper";
+  wrapper.setAttribute("data-state", "idle");
+  const parser = new DOMParser();
+  const svgDoc = parser.parseFromString(MASCOT_SVG, "image/svg+xml");
+  const svgElement = svgDoc.documentElement;
+  wrapper.appendChild(svgElement);
+  parent.appendChild(wrapper);
+  return wrapper;
 }
 
 //============================================
 
 // Swap the data-state attribute to trigger CSS animations.
 export function set_mascot_state(el: HTMLElement, state: MascotState): void {
-	el.setAttribute("data-state", state);
+  el.setAttribute("data-state", state);
 }

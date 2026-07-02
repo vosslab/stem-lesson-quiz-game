@@ -7,16 +7,19 @@ game locally or building releases.
 ## System dependencies
 
 - Node.js with `npm` (project pins `typescript`, `esbuild`, `@playwright/test`,
-  `http-server`, `prettier`, `eslint` via `package.json`).
+  `http-server`, `prettier`, `eslint` via `package.json`). CI uses Node 22
+  (see [.github/workflows/pages.yml](../.github/workflows/pages.yml)).
 - Python 3.12 (used by `tools/extract_stems.py` and `tools/yaml_to_json.py`).
-- Homebrew packages listed in [Brewfile](../Brewfile).
 
 ## One-time setup
 
 ```bash
-./setup_game.sh           # npm install + initial GitHub Pages build
-./setup_playwright.sh     # only needed if running Playwright smoke tests
+./setup_game.sh               # npm install + initial GitHub Pages build
+./devel/setup_playwright.sh   # only needed if running Playwright smoke tests
 ```
+
+The `npm run setup` and `npm run setup:playwright` aliases mirror these two
+scripts.
 
 `setup_game.sh` runs `npm install` and then `./build_github_pages.sh` so
 `dist/` exists before the first server run.
@@ -38,6 +41,7 @@ and data-pipeline commands, see [USAGE.md](USAGE.md).
 
 ## Known gaps
 
-- Document minimum Node.js version once verified against CI.
-- Confirm whether `setup_playwright.sh` is required on fresh macOS installs
+- Confirm the minimum supported Node.js version (CI runs Node 24; `package.json`
+  does not pin an `engines` range).
+- Confirm whether `devel/setup_playwright.sh` is required on fresh macOS installs
   (browsers may already be installed system-wide).

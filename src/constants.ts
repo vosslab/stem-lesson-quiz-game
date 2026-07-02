@@ -7,12 +7,12 @@ export const CHOICES_OPTIONS = [4, 6, 8] as const;
 // Streak banners: visual milestones shown in the play overlay.
 // Score system removed; banners trigger purely off the streak count.
 export const STREAK_BANNERS: { at: number; banner: string }[] = [
-	{ at: 3, banner: "Nice streak!" },
-	{ at: 5, banner: "On fire!" },
-	{ at: 10, banner: "UNSTOPPABLE!" },
-	{ at: 20, banner: "Legendary!" },
-	{ at: 30, banner: "Galaxy brain!" },
-	{ at: 40, banner: "Word wizard!" },
+  { at: 3, banner: "Nice streak!" },
+  { at: 5, banner: "On fire!" },
+  { at: 10, banner: "UNSTOPPABLE!" },
+  { at: 20, banner: "Legendary!" },
+  { at: 30, banner: "Galaxy brain!" },
+  { at: 40, banner: "Word wizard!" },
 ];
 
 // Coins

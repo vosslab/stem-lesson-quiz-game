@@ -4,9 +4,9 @@
 import type { RoundState } from "./question";
 
 export type ScreenState =
-	| { kind: "home" }
-	| { kind: "question"; round: RoundState }
-	| { kind: "results"; round: RoundState }
-	| { kind: "shop" }
-	| { kind: "goals" }
-	| { kind: "mastery" };
+  | { kind: "home" }
+  | { kind: "question"; round: RoundState }
+  | { kind: "results"; round: RoundState }
+  | { kind: "shop" }
+  | { kind: "goals" }
+  | { kind: "mastery" };

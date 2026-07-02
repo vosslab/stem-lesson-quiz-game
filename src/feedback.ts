@@ -5,35 +5,30 @@ import type { Direction } from "./types/question";
 import { STREAK_BANNERS } from "./constants";
 
 export const CORRECT_PRAISE: string[] = [
-	"Got it!",
-	"Yes!",
-	"Nailed it!",
-	"Smart!",
-	"Boom!",
-	"Sharp!",
-	"Crisp!",
-	"Locked in!",
+  "Got it!",
+  "Yes!",
+  "Nailed it!",
+  "Smart!",
+  "Boom!",
+  "Sharp!",
+  "Crisp!",
+  "Locked in!",
 ];
 
-export const WRONG_PRAISE: string[] = [
-	"Almost!",
-	"Close one!",
-	"Next time!",
-	"So close!",
-];
+export const WRONG_PRAISE: string[] = ["Almost!", "Close one!", "Next time!", "So close!"];
 
 //============================================
 
 // Return a random entry from pool, never the same as last.
 export function next_praise(pool: string[], last: string | null): string {
-	if (pool.length === 1) {
-		return pool[0];
-	}
-	let choice: string;
-	do {
-		choice = pool[Math.floor(Math.random() * pool.length)];
-	} while (choice === last);
-	return choice;
+  if (pool.length === 1) {
+    return pool[0];
+  }
+  let choice: string;
+  do {
+    choice = pool[Math.floor(Math.random() * pool.length)];
+  } while (choice === last);
+  return choice;
 }
 
 //============================================
@@ -42,44 +37,44 @@ export function next_praise(pool: string[], last: string | null): string {
 // Shows both in stem <-> meaning form regardless of direction.
 // Returns structured data for DOM construction by caller.
 export interface TeachingPanelData {
-	your_pick_stem: string;
-	your_pick_meaning: string;
-	correct_stem: string;
-	correct_meaning: string;
+  your_pick_stem: string;
+  your_pick_meaning: string;
+  correct_stem: string;
+  correct_meaning: string;
 }
 
 export function build_teaching_panel(opts: {
-	direction: Direction;
-	correct_stem: Stem;
-	chosen_answer: string;
-	bundle: Bundle;
+  direction: Direction;
+  correct_stem: Stem;
+  chosen_answer: string;
+  bundle: Bundle;
 }): TeachingPanelData | null {
-	const { direction, correct_stem, chosen_answer, bundle } = opts;
+  const { direction, correct_stem, chosen_answer, bundle } = opts;
 
-	// Find the stem that matches the chosen answer.
-	// If direction is stem_to_meaning, chosen is a meaning; find the stem with that meaning.
-	// If direction is meaning_to_stem, chosen is a stem; find the stem with that stem value.
-	let chosen_stem: Stem | undefined;
-	if (direction === "stem_to_meaning") {
-		// chosen_answer is a meaning; find stem by meaning match
-		chosen_stem = bundle.all_stems.find((s) => s.meaning === chosen_answer);
-	} else {
-		// chosen_answer is a stem; find stem by stem match
-		chosen_stem = bundle.all_stems.find((s) => s.stem === chosen_answer);
-	}
+  // Find the stem that matches the chosen answer.
+  // If direction is stem_to_meaning, chosen is a meaning; find the stem with that meaning.
+  // If direction is meaning_to_stem, chosen is a stem; find the stem with that stem value.
+  let chosen_stem: Stem | undefined;
+  if (direction === "stem_to_meaning") {
+    // chosen_answer is a meaning; find stem by meaning match
+    chosen_stem = bundle.all_stems.find((s) => s.meaning === chosen_answer);
+  } else {
+    // chosen_answer is a stem; find stem by stem match
+    chosen_stem = bundle.all_stems.find((s) => s.stem === chosen_answer);
+  }
 
-	// If we can't find it, return null
-	if (!chosen_stem) {
-		return null;
-	}
+  // If we can't find it, return null
+  if (!chosen_stem) {
+    return null;
+  }
 
-	// Return structured data for caller to build DOM
-	return {
-		your_pick_stem: chosen_stem.stem,
-		your_pick_meaning: chosen_stem.meaning,
-		correct_stem: correct_stem.stem,
-		correct_meaning: correct_stem.meaning,
-	};
+  // Return structured data for caller to build DOM
+  return {
+    your_pick_stem: chosen_stem.stem,
+    your_pick_meaning: chosen_stem.meaning,
+    correct_stem: correct_stem.stem,
+    correct_meaning: correct_stem.meaning,
+  };
 }
 
 //============================================
@@ -87,20 +82,20 @@ export function build_teaching_panel(opts: {
 // Return the banner text for a streak milestone, or null if not a milestone.
 // Handles fixed milestones (3, 5, 10, 20, 30, 40) and every 10 thereafter via cycling.
 export function streak_banner_for(streak: number): string | null {
-	// Check fixed milestones from STREAK_BANNERS
-	for (const milestone of STREAK_BANNERS) {
-		if (streak === milestone.at) {
-			return milestone.banner;
-		}
-	}
+  // Check fixed milestones from STREAK_BANNERS
+  for (const milestone of STREAK_BANNERS) {
+    if (streak === milestone.at) {
+      return milestone.banner;
+    }
+  }
 
-	// For streak >= 10, cycle through every 10 thereafter
-	if (streak >= 10 && streak % 10 === 0) {
-		// Determine which cycling message to use based on (streak / 10) % 3
-		const cycle_index = ((streak / 10) - 1) % 3;
-		const cycle_messages = ["Legendary!", "Galaxy brain!", "Word wizard!"];
-		return cycle_messages[cycle_index];
-	}
+  // For streak >= 10, cycle through every 10 thereafter
+  if (streak >= 10 && streak % 10 === 0) {
+    // Determine which cycling message to use based on (streak / 10) % 3
+    const cycle_index = (streak / 10 - 1) % 3;
+    const cycle_messages = ["Legendary!", "Galaxy brain!", "Word wizard!"];
+    return cycle_messages[cycle_index];
+  }
 
-	return null;
+  return null;
 }

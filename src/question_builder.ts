@@ -9,330 +9,326 @@ import { confusability_score } from "./distractor_score";
 //============================================
 
 export function build_round_state(config: RoundConfig): RoundState {
-	return {
-		config,
-		questions_asked: 0,
-		correct_count: 0,
-		wrong_count: 0,
-		current_streak: 0,
-		longest_streak: 0,
-		coins_earned: 0,
-		answers: [],
-		// Placeholders; start_round will assign real instances (retry_queue may stay null per mode)
-		retry_queue: null,
-		subject_deck: new SubjectDeck([]),
-	};
+  return {
+    config,
+    questions_asked: 0,
+    correct_count: 0,
+    wrong_count: 0,
+    current_streak: 0,
+    longest_streak: 0,
+    coins_earned: 0,
+    answers: [],
+    // Placeholders; start_round will assign real instances (retry_queue may stay null per mode)
+    retry_queue: null,
+    subject_deck: new SubjectDeck([]),
+  };
 }
 
 //============================================
 
 export class RetryQueue {
-	private queue: Stem[] = [];
-	private questions_since_miss: Map<string, number> = new Map();
+  private queue: Stem[] = [];
+  private questions_since_miss: Map<string, number> = new Map();
 
-	push_missed(stem: Stem): void {
-		this.queue.push(stem);
-		this.questions_since_miss.set(stem.id, 0);
-	}
+  push_missed(stem: Stem): void {
+    this.queue.push(stem);
+    this.questions_since_miss.set(stem.id, 0);
+  }
 
-	increment_questions(): void {
-		// Increment counter for all stems in the miss-tracking map
-		for (const [key, count] of this.questions_since_miss.entries()) {
-			this.questions_since_miss.set(key, count + 1);
-		}
-	}
+  increment_questions(): void {
+    // Increment counter for all stems in the miss-tracking map
+    for (const [key, count] of this.questions_since_miss.entries()) {
+      this.questions_since_miss.set(key, count + 1);
+    }
+  }
 
-	should_resurface(): Stem | null {
-		// Check if queue is empty
-		if (this.queue.length === 0) {
-			return null;
-		}
+  should_resurface(): Stem | null {
+    // Check if queue is empty
+    if (this.queue.length === 0) {
+      return null;
+    }
 
-		// Get the front stem
-		const stem = this.queue[0];
-		// invariant: stem was added to queue in push_missed, so it must be in questions_since_miss
-		const questions_passed = this.questions_since_miss.get(stem.id)!;
+    // Get the front stem
+    const stem = this.queue[0];
+    // invariant: stem was added to queue in push_missed, so it must be in questions_since_miss
+    const questions_passed = this.questions_since_miss.get(stem.id)!;
 
-		// Check if enough questions have passed (10-20 randomly, mode-gated)
-		const min = RETRY_QUEUE_RESURFACE_MIN;
-		const max = RETRY_QUEUE_RESURFACE_MAX;
-		const resurface_threshold = min + Math.floor(Math.random() * (max - min + 1));
+    // Check if enough questions have passed (10-20 randomly, mode-gated)
+    const min = RETRY_QUEUE_RESURFACE_MIN;
+    const max = RETRY_QUEUE_RESURFACE_MAX;
+    const resurface_threshold = min + Math.floor(Math.random() * (max - min + 1));
 
-		if (questions_passed >= resurface_threshold) {
-			this.queue.shift();
-			this.questions_since_miss.delete(stem.id);
-			return stem;
-		}
+    if (questions_passed >= resurface_threshold) {
+      this.queue.shift();
+      this.questions_since_miss.delete(stem.id);
+      return stem;
+    }
 
-		return null;
-	}
+    return null;
+  }
 
-	length(): number {
-		return this.queue.length;
-	}
+  length(): number {
+    return this.queue.length;
+  }
 }
 
 //============================================
 
 export class SubjectDeck {
-	private remaining: Stem[] = [];
-	private last_cycle_tail: string[] = [];
-	private current_cycle_drawn: string[] = [];
+  private remaining: Stem[] = [];
+  private last_cycle_tail: string[] = [];
+  private current_cycle_drawn: string[] = [];
 
-	constructor(initial_pool: Stem[]) {
-		this.reshuffle(initial_pool);
-	}
+  constructor(initial_pool: Stem[]) {
+    this.reshuffle(initial_pool);
+  }
 
-	private reshuffle(pool: Stem[]): void {
-		// K must be small enough to allow: last K distinct from first K
-		// With pool.length stems, we need pool.length >= 2K to guarantee it's possible
-		// So K <= floor(pool.length / 2)
-		// Cap at 4 for larger pools
-		const K = Math.min(4, Math.floor((pool.length - 1) / 2));
-		const tail_set = new Set(this.last_cycle_tail);
+  private reshuffle(pool: Stem[]): void {
+    // K must be small enough to allow: last K distinct from first K
+    // With pool.length stems, we need pool.length >= 2K to guarantee it's possible
+    // So K <= floor(pool.length / 2)
+    // Cap at 4 for larger pools
+    const K = Math.min(4, Math.floor((pool.length - 1) / 2));
+    const tail_set = new Set(this.last_cycle_tail);
 
-		let final_deck: Stem[] | null = null;
+    let final_deck: Stem[] | null = null;
 
-		// Try up to 8 reshuffles to find a deck with no seam collision
-		for (let attempt = 0; attempt < 8; attempt++) {
-			// Fisher-Yates shuffle
-			const deck = pool.slice();
-			for (let i = deck.length - 1; i > 0; i--) {
-				const j = Math.floor(Math.random() * (i + 1));
-				const tmp = deck[i];
-				deck[i] = deck[j];
-				deck[j] = tmp;
-			}
+    // Try up to 8 reshuffles to find a deck with no seam collision
+    for (let attempt = 0; attempt < 8; attempt++) {
+      // Fisher-Yates shuffle
+      const deck = pool.slice();
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = deck[i];
+        deck[i] = deck[j];
+        deck[j] = tmp;
+      }
 
-			// Check if first K cards have any collision with tail
-			let has_collision = false;
-			for (let i = 0; i < K && i < deck.length; i++) {
-				if (tail_set.has(deck[i].id)) {
-					has_collision = true;
-					break;
-				}
-			}
+      // Check if first K cards have any collision with tail
+      let has_collision = false;
+      for (let i = 0; i < K && i < deck.length; i++) {
+        if (tail_set.has(deck[i].id)) {
+          has_collision = true;
+          break;
+        }
+      }
 
-			if (!has_collision) {
-				final_deck = deck;
-				break;
-			}
-		}
+      if (!has_collision) {
+        final_deck = deck;
+        break;
+      }
+    }
 
-		// Use whatever deck we got (may have collisions if all 8 attempts failed)
-		this.remaining = final_deck || pool.slice();
+    // Use whatever deck we got (may have collisions if all 8 attempts failed)
+    this.remaining = final_deck || pool.slice();
 
-		// Reset the current cycle tracker
-		this.current_cycle_drawn = [];
-	}
+    // Reset the current cycle tracker
+    this.current_cycle_drawn = [];
+  }
 
-	draw(pool: Stem[]): Stem {
-		if (this.remaining.length === 0) {
-			// Transitioning to a new cycle: save the tail of current cycle
-			const K = Math.min(4, Math.floor((pool.length - 1) / 2));
-			this.last_cycle_tail = this.current_cycle_drawn.slice(-K);
-			this.reshuffle(pool);
-		}
+  draw(pool: Stem[]): Stem {
+    if (this.remaining.length === 0) {
+      // Transitioning to a new cycle: save the tail of current cycle
+      const K = Math.min(4, Math.floor((pool.length - 1) / 2));
+      this.last_cycle_tail = this.current_cycle_drawn.slice(-K);
+      this.reshuffle(pool);
+    }
 
-		const stem = this.remaining.shift();
-		if (!stem) {
-			throw new Error("SubjectDeck.draw: no stems available in deck");
-		}
+    const stem = this.remaining.shift();
+    if (!stem) {
+      throw new Error("SubjectDeck.draw: no stems available in deck");
+    }
 
-		this.current_cycle_drawn.push(stem.id);
-		return stem;
-	}
+    this.current_cycle_drawn.push(stem.id);
+    return stem;
+  }
 
-	is_exhausted(): boolean {
-		return this.remaining.length === 0;
-	}
+  is_exhausted(): boolean {
+    return this.remaining.length === 0;
+  }
 
-	remove_from_remaining(stem_id: string): void {
-		// Used when a stem resurfaces from the retry queue: drop it from the deck
-		// to prevent it from being drawn again later in the same cycle.
-		this.remaining = this.remaining.filter((s) => s.id !== stem_id);
-	}
+  remove_from_remaining(stem_id: string): void {
+    // Used when a stem resurfaces from the retry queue: drop it from the deck
+    // to prevent it from being drawn again later in the same cycle.
+    this.remaining = this.remaining.filter((s) => s.id !== stem_id);
+  }
 }
 
 //============================================
 
 export function pick_next_question(
-	bundle: Bundle,
-	config: RoundConfig,
-	retry_queue: RetryQueue | null,
-	subject_deck: SubjectDeck
+  bundle: Bundle,
+  config: RoundConfig,
+  retry_queue: RetryQueue | null,
+  subject_deck: SubjectDeck,
 ): Question {
-	// Build the filtered pool (stems matching selected lessons, fallback to all stems)
-	const selected_stems = bundle.all_stems.filter((stem) => {
-		const lesson_num_str = stem.lesson.substring(1);
-		const lesson_num = Number(lesson_num_str);
-		return config.selected_lesson_numbers.includes(lesson_num);
-	});
-	const pool = selected_stems.length > 0 ? selected_stems : bundle.all_stems;
+  // Build the filtered pool (stems matching selected lessons, fallback to all stems)
+  const selected_stems = bundle.all_stems.filter((stem) => {
+    const lesson_num_str = stem.lesson.substring(1);
+    const lesson_num = Number(lesson_num_str);
+    return config.selected_lesson_numbers.includes(lesson_num);
+  });
+  const pool = selected_stems.length > 0 ? selected_stems : bundle.all_stems;
 
-	// Mode gate: only try retry-queue resurface when enabled (Challenge/Endless).
-	// Quick Run passes null retry_queue, so the deck draw is the only path.
-	const resurface_stem = retry_queue ? retry_queue.should_resurface() : null;
-	let selected_stem = resurface_stem;
+  // Mode gate: only try retry-queue resurface when enabled (Challenge/Endless).
+  // Quick Run passes null retry_queue, so the deck draw is the only path.
+  const resurface_stem = retry_queue ? retry_queue.should_resurface() : null;
+  let selected_stem = resurface_stem;
 
-	if (!selected_stem) {
-		// Draw from deck
-		selected_stem = subject_deck.draw(pool);
-	} else {
-		// Resurfacing: remove the stem from the deck so it isn't drawn again later.
-		subject_deck.remove_from_remaining(selected_stem.id);
-	}
+  if (!selected_stem) {
+    // Draw from deck
+    selected_stem = subject_deck.draw(pool);
+  } else {
+    // Resurfacing: remove the stem from the deck so it isn't drawn again later.
+    subject_deck.remove_from_remaining(selected_stem.id);
+  }
 
-	// Coin-flip direction
-	const direction: Direction = Math.random() < 0.5 ? "stem_to_meaning" : "meaning_to_stem";
+  // Coin-flip direction
+  const direction: Direction = Math.random() < 0.5 ? "stem_to_meaning" : "meaning_to_stem";
 
-	// Build prompt and correct choice based on direction
-	let prompt: string;
-	let correct_choice: string;
+  // Build prompt and correct choice based on direction
+  let prompt: string;
+  let correct_choice: string;
 
-	if (direction === "stem_to_meaning") {
-		prompt = selected_stem.stem;
-		correct_choice = selected_stem.meaning;
-	} else {
-		prompt = selected_stem.meaning;
-		correct_choice = selected_stem.stem;
-	}
+  if (direction === "stem_to_meaning") {
+    prompt = selected_stem.stem;
+    correct_choice = selected_stem.meaning;
+  } else {
+    prompt = selected_stem.meaning;
+    correct_choice = selected_stem.stem;
+  }
 
-	// Build candidate pool: same-lesson siblings first, then cross-lesson
-	const same_lesson_stems = bundle.all_stems.filter(
-		(stem) => stem.lesson === selected_stem.lesson && stem.id !== selected_stem.id
-	);
+  // Build candidate pool: same-lesson siblings first, then cross-lesson
+  const same_lesson_stems = bundle.all_stems.filter(
+    (stem) => stem.lesson === selected_stem.lesson && stem.id !== selected_stem.id,
+  );
 
-	let candidate_pool = [...same_lesson_stems];
+  const candidate_pool = [...same_lesson_stems];
 
-	// Determine how many distractors needed based on choices_per_question
-	const distractor_count = config.choices_per_question - 1;
-	// Cap the candidate pool size: fetch top-(distractor_count-1)*2 to ensure diversity
-	// but no less than 6 for fallback cases (e.g., if only 4 distractors needed, still sample from top 6)
-	const top_n_cap = Math.max(6, (distractor_count - 1) * 2);
+  // Determine how many distractors needed based on choices_per_question
+  const distractor_count = config.choices_per_question - 1;
+  // Cap the candidate pool size: fetch top-(distractor_count-1)*2 to ensure diversity
+  // but no less than 6 for fallback cases (e.g., if only 4 distractors needed, still sample from top 6)
+  const top_n_cap = Math.max(6, (distractor_count - 1) * 2);
 
-	// If pool has < top_n_cap unique-by-answer candidates, extend with cross-lesson stems
-	const candidate_choices = new Set<string>();
-	candidate_choices.add(correct_choice);
+  // If pool has < top_n_cap unique-by-answer candidates, extend with cross-lesson stems
+  const candidate_choices = new Set<string>();
+  candidate_choices.add(correct_choice);
 
-	for (const stem of candidate_pool) {
-		const choice_value =
-			direction === "stem_to_meaning" ? stem.meaning : stem.stem;
-		candidate_choices.add(choice_value);
-	}
+  for (const stem of candidate_pool) {
+    const choice_value = direction === "stem_to_meaning" ? stem.meaning : stem.stem;
+    candidate_choices.add(choice_value);
+  }
 
-	if (candidate_choices.size < top_n_cap) {
-		const cross_lesson_stems = bundle.all_stems.filter(
-			(stem) =>
-				stem.lesson !== selected_stem.lesson &&
-				!same_lesson_stems.some((d) => d.id === stem.id)
-		);
+  if (candidate_choices.size < top_n_cap) {
+    const cross_lesson_stems = bundle.all_stems.filter(
+      (stem) =>
+        stem.lesson !== selected_stem.lesson && !same_lesson_stems.some((d) => d.id === stem.id),
+    );
 
-		for (const stem of cross_lesson_stems) {
-			const choice_value =
-				direction === "stem_to_meaning" ? stem.meaning : stem.stem;
+    for (const stem of cross_lesson_stems) {
+      const choice_value = direction === "stem_to_meaning" ? stem.meaning : stem.stem;
 
-			if (!candidate_choices.has(choice_value)) {
-				candidate_choices.add(choice_value);
-				candidate_pool.push(stem);
-			}
+      if (!candidate_choices.has(choice_value)) {
+        candidate_choices.add(choice_value);
+        candidate_pool.push(stem);
+      }
 
-			if (candidate_choices.size >= top_n_cap) {
-				break;
-			}
-		}
-	}
+      if (candidate_choices.size >= top_n_cap) {
+        break;
+      }
+    }
+  }
 
-	// Score every candidate via confusability_score
-	const scored_candidates = candidate_pool.map((stem) => ({
-		stem,
-		score: confusability_score(selected_stem, stem, direction),
-	}));
+  // Score every candidate via confusability_score
+  const scored_candidates = candidate_pool.map((stem) => ({
+    stem,
+    score: confusability_score(selected_stem, stem, direction),
+  }));
 
-	// Sort descending by score
-	scored_candidates.sort((a, b) => b.score - a.score);
+  // Sort descending by score
+  scored_candidates.sort((a, b) => b.score - a.score);
 
-	// Take top-N (where N = top_n_cap)
-	const top_n_stems = scored_candidates.slice(0, top_n_cap).map((sc) => sc.stem);
+  // Take top-N (where N = top_n_cap)
+  const top_n_stems = scored_candidates.slice(0, top_n_cap).map((sc) => sc.stem);
 
-	// Clamp actual distractor count to pool size
-	// If we can't get distractor_count distractors, use what we have
-	const actual_distractor_count = Math.min(distractor_count, top_n_stems.length);
+  // Clamp actual distractor count to pool size
+  // If we can't get distractor_count distractors, use what we have
+  const actual_distractor_count = Math.min(distractor_count, top_n_stems.length);
 
-	// Randomly select actual_distractor_count from top_n
-	const selected_distractors: Stem[] = [];
-	const selected_indices = new Set<number>();
+  // Randomly select actual_distractor_count from top_n
+  const selected_distractors: Stem[] = [];
+  const selected_indices = new Set<number>();
 
-	for (let i = 0; i < actual_distractor_count && top_n_stems.length > 0; i++) {
-		let idx: number;
-		do {
-			idx = Math.floor(Math.random() * top_n_stems.length);
-		} while (selected_indices.has(idx) && selected_indices.size < top_n_stems.length);
+  for (let i = 0; i < actual_distractor_count && top_n_stems.length > 0; i++) {
+    let idx: number;
+    do {
+      idx = Math.floor(Math.random() * top_n_stems.length);
+    } while (selected_indices.has(idx) && selected_indices.size < top_n_stems.length);
 
-		selected_indices.add(idx);
-		selected_distractors.push(top_n_stems[idx]);
-	}
+    selected_indices.add(idx);
+    selected_distractors.push(top_n_stems[idx]);
+  }
 
-	// Wildcard escape: with 15% chance, replace one distractor with random from full pool
-	if (selected_distractors.length > 0 && Math.random() < 0.15) {
-		const replacement_idx = Math.floor(Math.random() * selected_distractors.length);
-		const wildcard_stem = candidate_pool[Math.floor(Math.random() * candidate_pool.length)];
-		selected_distractors[replacement_idx] = wildcard_stem;
-	}
+  // Wildcard escape: with 15% chance, replace one distractor with random from full pool
+  if (selected_distractors.length > 0 && Math.random() < 0.15) {
+    const replacement_idx = Math.floor(Math.random() * selected_distractors.length);
+    const wildcard_stem = candidate_pool[Math.floor(Math.random() * candidate_pool.length)];
+    selected_distractors[replacement_idx] = wildcard_stem;
+  }
 
-	// Build the choices array (correct + N distractors)
-	const distractor_choices = new Set<string>();
-	distractor_choices.add(correct_choice);
+  // Build the choices array (correct + N distractors)
+  const distractor_choices = new Set<string>();
+  distractor_choices.add(correct_choice);
 
-	const distractors = selected_distractors
-		.map((stem) => (direction === "stem_to_meaning" ? stem.meaning : stem.stem))
-		.filter((choice) => {
-			if (distractor_choices.has(choice)) {
-				return false;
-			}
-			distractor_choices.add(choice);
-			return true;
-		});
+  const distractors = selected_distractors
+    .map((stem) => (direction === "stem_to_meaning" ? stem.meaning : stem.stem))
+    .filter((choice) => {
+      if (distractor_choices.has(choice)) {
+        return false;
+      }
+      distractor_choices.add(choice);
+      return true;
+    });
 
-	// Top-up from the FULL 140-stem corpus if dedup or thin-lesson sampling
-	// shrank distractors below requested count. The plan calls for always
-	// padding to choices_per_question rather than letting kids see flickering
-	// 4-vs-3 button counts. Cross-lesson borrows only as a last resort, so
-	// same-lesson confusability still dominates the question feel.
-	if (distractors.length < distractor_count) {
-		const corpus_shuffled = bundle.all_stems.slice();
-		for (let i = corpus_shuffled.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1));
-			const tmp = corpus_shuffled[i];
-			corpus_shuffled[i] = corpus_shuffled[j];
-			corpus_shuffled[j] = tmp;
-		}
-		for (const stem of corpus_shuffled) {
-			if (distractors.length >= distractor_count) break;
-			if (stem.id === selected_stem.id) continue;
-			const choice_value =
-				direction === "stem_to_meaning" ? stem.meaning : stem.stem;
-			if (distractor_choices.has(choice_value)) continue;
-			distractor_choices.add(choice_value);
-			distractors.push(choice_value);
-		}
-	}
+  // Top-up from the FULL 140-stem corpus if dedup or thin-lesson sampling
+  // shrank distractors below requested count. The plan calls for always
+  // padding to choices_per_question rather than letting kids see flickering
+  // 4-vs-3 button counts. Cross-lesson borrows only as a last resort, so
+  // same-lesson confusability still dominates the question feel.
+  if (distractors.length < distractor_count) {
+    const corpus_shuffled = bundle.all_stems.slice();
+    for (let i = corpus_shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = corpus_shuffled[i];
+      corpus_shuffled[i] = corpus_shuffled[j];
+      corpus_shuffled[j] = tmp;
+    }
+    for (const stem of corpus_shuffled) {
+      if (distractors.length >= distractor_count) break;
+      if (stem.id === selected_stem.id) continue;
+      const choice_value = direction === "stem_to_meaning" ? stem.meaning : stem.stem;
+      if (distractor_choices.has(choice_value)) continue;
+      distractor_choices.add(choice_value);
+      distractors.push(choice_value);
+    }
+  }
 
-	const choices = [correct_choice, ...distractors];
+  const choices = [correct_choice, ...distractors];
 
-	// Shuffle choices
-	for (let i = choices.length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
-		const temp = choices[i];
-		choices[i] = choices[j];
-		choices[j] = temp;
-	}
+  // Shuffle choices
+  for (let i = choices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = choices[i];
+    choices[i] = choices[j];
+    choices[j] = temp;
+  }
 
-	return {
-		direction,
-		prompt,
-		correct_choice,
-		choices,
-		source_stem: selected_stem,
-	};
+  return {
+    direction,
+    prompt,
+    correct_choice,
+    choices,
+    source_stem: selected_stem,
+  };
 }

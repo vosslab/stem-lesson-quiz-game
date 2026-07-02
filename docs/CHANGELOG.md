@@ -1,3 +1,77 @@
+## 2026-07-02
+
+### Additions and New Features
+
+- Added `devel/clean_build.sh`, the light build cleaner wired to the `npm run clean` target. It
+  wipes build output, tool caches, and test artifacts while keeping `node_modules` (and Rust
+  `target/`) intact, so the next build is ab initio with no reinstall.
+- Updated `devel/dist_clean.sh` (the deep reset) to keep the committed `package-lock.json`, so a
+  distribution-clean checkout still drives a reproducible `npm ci`.
+- Repointed the `clean` npm alias in `package.json` from `./dist_clean.sh` to
+  `./devel/clean_build.sh`.
+- Added [docs/FILE_FORMATS.md](FILE_FORMATS.md) documenting the two data interface surfaces: the
+  input question bundle (`data/stems_bundle.json`, 20 lessons / 140 stems, schema in
+  `src/data_loader.ts`) and the versioned `localStorage` save (`stems_quiz_v1`,
+  `SAVE_SCHEMA_VERSION = 3`, schema in `src/types/save.ts`).
+
+### Fixes and Maintenance
+
+**Docset refresh pass (docset-updater).** Refreshed the full doc set from current repo evidence:
+`docs/CODE_ARCHITECTURE.md`, `docs/FILE_STRUCTURE.md`, `docs/INSTALL.md`, `docs/USAGE.md`,
+`docs/RELATED_PROJECTS.md`, `docs/RELEASE_HISTORY.md`, `docs/NEWS.md`, `README.md`, and `AGENTS.md`
+(trimmed to a bare-path pointer file). All owned by their per-doc skills.
+
+**Fixed six broken Markdown links flagged by `tests/test_markdown_links.py`.** `docs/INSTALL.md` and
+`docs/USAGE.md` linked an untracked stray `deploy-pages.yml`; repointed both to the real workflow
+[.github/workflows/pages.yml](../.github/workflows/pages.yml) and corrected the stated CI Node
+version (22, not 24) and workflow name (`Deploy Pages`). Fixed path-like link-text mismatches in
+`docs/CODE_ARCHITECTURE.md` and `docs/FILE_STRUCTURE.md`, and redundant `../docs/` traversal in
+`docs/FILE_STRUCTURE.md`. `pytest tests/test_markdown_links.py`: 30 passed.
+
+**Unblocked the `lint` gate (CommonJS-vs-ESM + missing eslint deps).** `check_codebase.sh` step 3
+failed because `package.json` declared `"type": "commonjs"` while the canonical (propagated)
+`eslint.config.js` and `eslint.config.local.js` are ESM (`import`/`export default`) -- Node loaded
+the config as CJS and threw `SyntaxError: Cannot use import statement outside a module`. The repo is
+ESM throughout (`tsconfig` `module: esnext`, tools are `.mjs`, `<script type="module">`), so flipped
+`package.json` to `"type": "module"`. Also declared the three devDependencies the canonical config
+imports but this repo was missing: `@eslint/js` (>=10.0.1), `globals` (>=17.7.0), and
+`typescript-eslint` (>=8.62.1); ran `devel/setup_typescript.sh` to install. Did not edit
+`eslint.config.js` (propagated, overwritten each run per `docs/TYPESCRIPT_STYLE.md`).
+
+**Fixed 22 real ESLint errors surfaced once the config loaded.** 7 auto-fixed (`prefer-const`,
+`no-unnecessary-type-assertion`, `prefer-as-const`). 15 fixed by hand: floating/misused promises
+wrapped with `void` (`src/init.ts`, `src/scene_mastery.ts`, `src/scene_shop.ts`), explicit `: void`
+/ `: Promise<void>` return types added, dead `no-useless-assignment` initializers removed
+(`src/init.ts`, `src/mastery.ts`, `src/daily_goals.ts`), unused imports/args dropped in the
+Playwright test helpers. Restored two `HTMLButtonElement` narrowings in `src/ui_rendering.ts` that
+`--fix` wrongly stripped, using typed `querySelector<HTMLButtonElement>` so both tsc and ESLint pass.
+Gate now green: 5 checks pass, 747 pytests pass, `dist/main.js` builds at 52.6kb.
+
+### Removals and Deprecations
+
+- Removed the root `dist_clean.sh`; both cleaners now live only under `devel/`
+  (`devel/clean_build.sh` light, `devel/dist_clean.sh` deep).
+
+## 2026-07-01
+
+### Fixes and Maintenance
+
+**Reformatted 34 files with `prettier --write` after the prettier 3.9.4 floor bump.** The fleet-wide prettier floor bump changed formatting output such that these previously-clean files failed `prettier --check`. Ran `npx prettier --write '**/*.{ts,tsx,mts,cts,js,mjs,cjs}'` to conform to the canonical `.prettierrc`; whitespace-only, no logic change.
+
+Added the canonical `allowScripts` allow-list (esbuild + fsevents install scripts) to `package.json` to silence `npm warn allow-scripts` and match the template.
+
+**Declared the missing `tsx` devDependency and added the missing `setup` front-door aliases.** [package.json](../package.json) ran `node --import tsx --test` from `check_codebase.sh` without ever declaring `tsx` in `devDependencies` -- this repo was the only one in the fleet missing it (9 sibling repos already declare `"tsx": ">=4.22.4"`). Added `"tsx": ">=4.22.4"` alphabetically to `devDependencies`. Also added `scripts.setup` (-> `./devel/setup_typescript.sh`) and `scripts.setup:playwright` (-> `./devel/setup_playwright.sh`), matching the canonical alias table in `docs/TYPESCRIPT_STYLE.md`; both `devel/setup_typescript.sh` and `devel/setup_playwright.sh` already exist and are executable, they just had no npm front door. Did not touch the `test` stub or the pre-existing CJS/ESM lint blocker (see Decisions and Failures below); no `npm install` run as part of this change.
+
+**check_codebase.sh gate: seeded tools/typecheck_lint_stub.ts to unblock typecheck:lint.** `tsc -p tsconfig.lint.json` exited 2 with TS18003 ("No inputs were found") because `tests/**/*.ts` and `tools/**/*.ts` matched zero files (this repo's tests are `.mjs`/`.py` and tools are `.py`/`.mjs`). Added [tools/typecheck_lint_stub.ts](../tools/typecheck_lint_stub.ts), the workaround documented in `docs/TYPESCRIPT_STYLE.md` ("seed a stub .ts in either tree"). `typecheck` and `typecheck:lint` both pass now.
+
+### Behavior or Interface Changes
+
+**Added npm front-door aliases mirroring the repo's shell scripts.** [package.json](../package.json) `scripts` gained `check` (-> `./check_codebase.sh`), `build` (-> `./build_github_pages.sh`), `serve` (-> `./run_web_server.sh`), and `clean` (-> `./dist_clean.sh`), matching the canonical alias table in `docs/TYPESCRIPT_STYLE.md`. Verified: `npm run check` reproduces the same gate output as `./check_codebase.sh`; `npm run clean` removes `dist/` and `data/stems_bundle.json` while leaving `node_modules/` intact; `npm run build` regenerates the bundle; `npm run serve` builds and starts `http.server` on a free port. Kept the existing `npm test` stub (`echo "Error: no test specified" && exit 1`) as-is -- it is honest boilerplate, not broken or misleading; real checks run through `check_codebase.sh` and `run_playwright_tests.sh`.
+
+### Decisions and Failures
+
+**`npx eslint` gate step still fails (out of scope for this pass).** `package.json` declares `"type": "commonjs"` but `eslint.config.js` uses ESM `import` syntax, so Node throws `SyntaxError: Cannot use import statement outside a module` before ESLint can run. This is the repo's known CommonJS-vs-ESM setup gap, explicitly deferred to a future pass; left `package.json` `type` and `eslint.config.js` unchanged. Left as-is per instructions; `./check_codebase.sh` stops at the `lint` step with `[FAIL] lint` until that pass lands.
+
 ## 2026-05-18
 
 ### Fixes and Maintenance

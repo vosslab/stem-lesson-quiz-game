@@ -5,7 +5,6 @@ import { chromium } from "playwright";
 import { execSync } from "node:child_process";
 import { start_server, stop_server } from "./_server.mjs";
 import { REPO_ROOT } from "./repo_root.mjs";
-import path from "node:path";
 
 const PORT = 8124; // Use a different port from test_load_smoke
 const URL = `http://localhost:${PORT}`;
@@ -17,140 +16,143 @@ const LOAD_TIMEOUT = 10000; // 10s for page load
 //============================================
 
 async function main() {
-	const startTime = Date.now();
-	let server = null;
-	let browser = null;
+  const startTime = Date.now();
+  let server = null;
+  let browser = null;
 
-	try {
-		// 1. Rebuild dist/ to ensure freshness
-		console.log("[quiz-smoke] Building dist/...");
-		execSync("bash build_github_pages.sh", {
-			cwd: REPO_ROOT,
-			stdio: "inherit",
-			timeout: BUILD_TIMEOUT,
-		});
+  try {
+    // 1. Rebuild dist/ to ensure freshness
+    console.log("[quiz-smoke] Building dist/...");
+    execSync("bash build_github_pages.sh", {
+      cwd: REPO_ROOT,
+      stdio: "inherit",
+      timeout: BUILD_TIMEOUT,
+    });
 
-		// 2. Start server on a free port
-		console.log(`[quiz-smoke] Starting server on http://localhost:${PORT}...`);
-		server = await start_server(PORT);
+    // 2. Start server on a free port
+    console.log(`[quiz-smoke] Starting server on http://localhost:${PORT}...`);
+    server = await start_server(PORT);
 
-		// 3. Launch headless Chromium
-		console.log("[quiz-smoke] Launching headless Chromium...");
-		browser = await chromium.launch({ headless: true });
+    // 3. Launch headless Chromium
+    console.log("[quiz-smoke] Launching headless Chromium...");
+    browser = await chromium.launch({ headless: true });
 
-		// 4. Open page and wait for load
-		const page = await browser.newPage();
+    // 4. Open page and wait for load
+    const page = await browser.newPage();
 
-		// Collect console messages and errors
-		const consoleMessages = [];
-		const pageErrors = [];
+    // Collect console messages and errors
+    const consoleMessages = [];
+    const pageErrors = [];
 
-		page.on("console", (msg) => {
-			consoleMessages.push({
-				type: msg.type(),
-				text: msg.text(),
-			});
-		});
+    page.on("console", (msg) => {
+      consoleMessages.push({
+        type: msg.type(),
+        text: msg.text(),
+      });
+    });
 
-		page.on("pageerror", (err) => {
-			pageErrors.push(err.toString());
-		});
+    page.on("pageerror", (err) => {
+      pageErrors.push(err.toString());
+    });
 
-		console.log("[quiz-smoke] Navigating to page...");
-		await page.goto(URL, { waitUntil: "load", timeout: LOAD_TIMEOUT });
+    console.log("[quiz-smoke] Navigating to page...");
+    await page.goto(URL, { waitUntil: "load", timeout: LOAD_TIMEOUT });
 
-		// 5. Wait for #app to be ready
-		console.log("[quiz-smoke] Waiting for app to load...");
-		await page.locator("#app").waitFor({ timeout: LOAD_TIMEOUT });
+    // 5. Wait for #app to be ready
+    console.log("[quiz-smoke] Waiting for app to load...");
+    await page.locator("#app").waitFor({ timeout: LOAD_TIMEOUT });
 
-		// 6. Mode cards must exist (Quick Run).
-		const modeCard = page.locator("button:has-text('Quick Run')");
-		const modeCardCount = await modeCard.count();
+    // 6. Mode cards must exist (Quick Run).
+    const modeCard = page.locator("button:has-text('Quick Run')");
+    const modeCardCount = await modeCard.count();
 
-		if (modeCardCount === 0) {
-			console.error("[quiz-smoke] FAIL: No mode card (Quick Run) found.");
-			process.exit(1);
-		}
+    if (modeCardCount === 0) {
+      console.error("[quiz-smoke] FAIL: No mode card (Quick Run) found.");
+      process.exit(1);
+    }
 
-		// 7. Verify page transitioned away from home.
-		console.log("[quiz-smoke] Clicking Quick Run mode card...");
-		await modeCard.click();
+    // 7. Verify page transitioned away from home.
+    console.log("[quiz-smoke] Clicking Quick Run mode card...");
+    await modeCard.click();
 
-		// Wait for the quiz screen (choices-grid) to appear
-		console.log("[quiz-smoke] Waiting for quiz screen to load...");
-		await page.waitForSelector(".choices-grid", { timeout: 5000 });
+    // Wait for the quiz screen (choices-grid) to appear
+    console.log("[quiz-smoke] Waiting for quiz screen to load...");
+    await page.waitForSelector(".choices-grid", { timeout: 5000 });
 
-		// Check that #app no longer contains "Stems Quiz" (home screen title)
-		const appContent = await page.locator("#app").textContent();
-		if (appContent && appContent.includes("Stems Quiz")) {
-			console.error("[quiz-smoke] FAIL: Page did not transition away from home screen.");
-			process.exit(1);
-		}
-		console.log("[quiz-smoke] OK: Page transitioned away from home.");
+    // Check that #app no longer contains "Stems Quiz" (home screen title)
+    const appContent = await page.locator("#app").textContent();
+    if (appContent && appContent.includes("Stems Quiz")) {
+      console.error("[quiz-smoke] FAIL: Page did not transition away from home screen.");
+      process.exit(1);
+    }
+    console.log("[quiz-smoke] OK: Page transitioned away from home.");
 
-		// 8. Verify keyboard input changes game state
-		const beforeInputText = await page.locator("#app").textContent();
+    // 8. Verify keyboard input changes game state
+    const beforeInputText = await page.locator("#app").textContent();
 
-		// Try to answer one question by pressing "1" key
-		console.log("[quiz-smoke] Pressing '1' key...");
-		await page.keyboard.press("1");
+    // Try to answer one question by pressing "1" key
+    console.log("[quiz-smoke] Pressing '1' key...");
+    await page.keyboard.press("1");
 
-		// Wait for the continue-hint to appear (wrong answer) or next question (correct answer)
-		// Use a short timeout for the continue-hint check; if it doesn't appear, we had a correct answer
-		const continueHintVisible = await page.locator(".continue-hint").isVisible({ timeout: 3000 }).catch(() => false);
+    // Wait for the continue-hint to appear (wrong answer) or next question (correct answer)
+    // Use a short timeout for the continue-hint check; if it doesn't appear, we had a correct answer
+    const continueHintVisible = await page
+      .locator(".continue-hint")
+      .isVisible({ timeout: 3000 })
+      .catch(() => false);
 
-		if (continueHintVisible) {
-			// Wrong answer: advance by pressing Enter
-			console.log("[quiz-smoke] Wrong answer detected. Pressing Enter to confirm and advance...");
-			await page.keyboard.press("Enter");
+    if (continueHintVisible) {
+      // Wrong answer: advance by pressing Enter
+      console.log("[quiz-smoke] Wrong answer detected. Pressing Enter to confirm and advance...");
+      await page.keyboard.press("Enter");
 
-			// Wait for next question to appear
-			await page.waitForSelector(".question-text", { timeout: 3000 });
-		} else {
-			// Correct answer: wait for auto-advance to next question
-			console.log("[quiz-smoke] Correct answer detected. Waiting for auto-advance...");
-			await page.waitForSelector(".question-text", { timeout: 3000 });
-		}
+      // Wait for next question to appear
+      await page.waitForSelector(".question-text", { timeout: 3000 });
+    } else {
+      // Correct answer: wait for auto-advance to next question
+      console.log("[quiz-smoke] Correct answer detected. Waiting for auto-advance...");
+      await page.waitForSelector(".question-text", { timeout: 3000 });
+    }
 
-		const afterInputText = await page.locator("#app").textContent();
+    const afterInputText = await page.locator("#app").textContent();
 
-		// Check that something changed (either next question or feedback)
-		if (beforeInputText === afterInputText) {
-			console.error("[quiz-smoke] FAIL: #app text did not change after keyboard input.");
-			process.exit(1);
-		}
-		console.log("[quiz-smoke] OK: game responded to keyboard input.");
+    // Check that something changed (either next question or feedback)
+    if (beforeInputText === afterInputText) {
+      console.error("[quiz-smoke] FAIL: #app text did not change after keyboard input.");
+      process.exit(1);
+    }
+    console.log("[quiz-smoke] OK: game responded to keyboard input.");
 
-		// 9. Check for zero console errors
-		const errors = consoleMessages.filter((m) => m.type === "error");
-		if (errors.length > 0) {
-			console.error("[quiz-smoke] FAIL: Console errors detected:");
-			errors.forEach((e) => console.error(`  ${e.text}`));
-			process.exit(1);
-		}
-		console.log("[quiz-smoke] OK: no console errors.");
+    // 9. Check for zero console errors
+    const errors = consoleMessages.filter((m) => m.type === "error");
+    if (errors.length > 0) {
+      console.error("[quiz-smoke] FAIL: Console errors detected:");
+      errors.forEach((e) => console.error(`  ${e.text}`));
+      process.exit(1);
+    }
+    console.log("[quiz-smoke] OK: no console errors.");
 
-		// 10. Check for unhandled page errors
-		if (pageErrors.length > 0) {
-			console.error("[quiz-smoke] FAIL: Unhandled page errors:");
-			pageErrors.forEach((e) => console.error(`  ${e}`));
-			process.exit(1);
-		}
-		console.log("[quiz-smoke] OK: no unhandled page errors.");
+    // 10. Check for unhandled page errors
+    if (pageErrors.length > 0) {
+      console.error("[quiz-smoke] FAIL: Unhandled page errors:");
+      pageErrors.forEach((e) => console.error(`  ${e}`));
+      process.exit(1);
+    }
+    console.log("[quiz-smoke] OK: no unhandled page errors.");
 
-		// Success
-		const elapsedMs = Date.now() - startTime;
-		const elapsedS = (elapsedMs / 1000).toFixed(1);
-		console.log(`[quiz-smoke] OK: quiz smoke test passed in ${elapsedS}s`);
-		process.exit(0);
-	} catch (err) {
-		console.error(`[quiz-smoke] FAIL: ${err instanceof Error ? err.message : String(err)}`);
-		process.exit(1);
-	} finally {
-		// Cleanup
-		if (browser) await browser.close();
-		if (server) await stop_server(server);
-	}
+    // Success
+    const elapsedMs = Date.now() - startTime;
+    const elapsedS = (elapsedMs / 1000).toFixed(1);
+    console.log(`[quiz-smoke] OK: quiz smoke test passed in ${elapsedS}s`);
+    process.exit(0);
+  } catch (err) {
+    console.error(`[quiz-smoke] FAIL: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
+  } finally {
+    // Cleanup
+    if (browser) await browser.close();
+    if (server) await stop_server(server);
+  }
 }
 
 main();

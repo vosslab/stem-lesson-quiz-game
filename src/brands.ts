@@ -10,9 +10,9 @@ export type LessonId = string & { readonly [lessonIdBrand]: true };
 export type StemId = string & { readonly [stemIdBrand]: true };
 
 export function toLessonId(value: string): LessonId {
-	return value as LessonId;
+  return value as LessonId;
 }
 
 export function toStemId(value: string): StemId {
-	return value as StemId;
+  return value as StemId;
 }
