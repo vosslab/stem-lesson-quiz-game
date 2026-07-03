@@ -1,3 +1,14 @@
+## 2026-07-03
+
+### Additions and New Features
+
+- Added `docs/PALETTE_CONTRAST_AUDIT.md` documenting the eight fixed slot accents
+  (`src/slot_palette.ts`) as button fills with white text, each at least 5.5:1 on white.
+
+### Behavior or Interface Changes
+
+- `docs/COLOR_CONTRAST_ACCESSIBILITY.md` now holds only the generic WCAG contrast method.
+
 ## 2026-07-02
 
 ### Additions and New Features

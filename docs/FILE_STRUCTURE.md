@@ -92,9 +92,11 @@ stem-lesson-quiz-game/
 - [docs/](.) -- all repo docs (this file lives here).
 - [docs/GAME_USAGE.md](GAME_USAGE.md),
   [docs/COLOR_CONTRAST_ACCESSIBILITY.md](COLOR_CONTRAST_ACCESSIBILITY.md),
+  [docs/PALETTE_CONTRAST_AUDIT.md](PALETTE_CONTRAST_AUDIT.md),
   [docs/FUN_VIBES_DESIGN_STYLE.md](FUN_VIBES_DESIGN_STYLE.md),
   [docs/PLAYFUL_TRAINING_GAME_STYLE.md](PLAYFUL_TRAINING_GAME_STYLE.md) --
-  game-specific guides.
+  game-specific guides. `PALETTE_CONTRAST_AUDIT.md` is the repo's audited
+  palette (slot accents).
 - [docs/REPO_STYLE.md](REPO_STYLE.md), [docs/PYTHON_STYLE.md](PYTHON_STYLE.md),
   [docs/TYPESCRIPT_STYLE.md](TYPESCRIPT_STYLE.md),
   [docs/MARKDOWN_STYLE.md](MARKDOWN_STYLE.md),
